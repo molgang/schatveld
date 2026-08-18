@@ -1,0 +1,86 @@
+"""mc_bridge.py — de Minecraft-kant van de 'one brain'.
+Polt via RCON de storage-queue die de datapack bij graven/detector vult, laat de
+gedeelde Brain de vondst berekenen (identiek aan de Roblox/API-kant), en pusht het
+resultaat terug naar de modded server (give + tellraw). Datapack = detector,
+Python = loot-autoriteit.
+"""
+import re
+import time
+
+from schatveld_core import Brain, field, config, cadastre, loot
+from rcon import Rcon
+
+MC_USER = "mc_player"           # gedeeld MC-profiel in de Brain (MVP: één wereld)
+
+# --- SNBT-parse van 'data get storage schatveld:ev queue' ---
+_ENTRY = re.compile(r"\{[^{}]*\}")
+_KIND = re.compile(r'kind:\s*"(\w+)"')
+_POS = re.compile(r"Pos:\s*\[([^\]]+)\]")
+
+
+def parse_queue(snbt: str):
+    """Haal (kind, x, y, z) uit de storage-uitvoer van Minecraft."""
+    events = []
+    for m in _ENTRY.finditer(snbt):
+        blk = m.group(0)
+        k = _KIND.search(blk)
+        p = _POS.search(blk)
+        if not k or not p:
+            continue
+        nums = [float(x.strip().rstrip("dfsbL")) for x in p.group(1).split(",")]
+        if len(nums) >= 3:
+            events.append((k.group(1), nums[0], nums[1], nums[2]))
+    return events
+
+
+def _mc_give(rc, x, y, z, mc_item, count, msg, color="green"):
+    # geef aan de dichtstbijzijnde speler bij de graaflocatie + meld het
+    rc.command(f"execute positioned {x:.2f} {y:.2f} {z:.2f} run "
+               f"give @p[distance=..6] {mc_item} {count}")
+    rc.command(f"execute positioned {x:.2f} {y:.2f} {z:.2f} run "
+               f'tellraw @p[distance=..8] {{"text":"{msg}","color":"{color}"}}')
+
+
+def handle_event(brain, rc, kind, x, y, z):
+    col, row = int(x // 1), int(z // 1)         # wereld-blokcoords = veld-coords
+    v = field.value(col, row, brain.seed)
+    if kind == "scan":
+        col_color = "dark_gray" if v < 10 else ("gold" if v >= 70 else "yellow")
+        rc.command(f"execute positioned {x:.2f} {y:.2f} {z:.2f} run "
+                   f'tellraw @p[distance=..8] ["",{{"text":"Detector (Python-brain): ","color":"aqua"}},'
+                   f'{{"text":"{v}","color":"{col_color}","bold":true}},{{"text":"/100","color":"gray"}}]')
+        return ("scan", v, None)
+    # dig: laat de Brain de vondst bepalen (zelfde regels als Roblox)
+    brain._p(MC_USER)["tools"]["Schep"] = True
+    brain._p(MC_USER)["permit"] = True
+    res = brain.dig(MC_USER, col, row)
+    find = res["find"]
+    label = find["name"].replace('"', "'")
+    tag = " [Schatzregal → Land Bremen]" if res["schatzregal"] else ""
+    _mc_give(rc, x, y, z, find["mc"], 1,
+             f"Python-brain: metaal {res['metal']} -> {label} (EUR {res['payout']}){tag}",
+             "gold" if res["schatzregal"] else "green")
+    return ("dig", v, find["name"])
+
+
+def run(host="127.0.0.1", port=25575, password="schatveld", poll=0.5, once=False):
+    brain = Brain()
+    with Rcon(host, port, password) as rc:
+        print(f"[bridge] verbonden met RCON {host}:{port}")
+        while True:
+            out = rc.command("data get storage schatveld:ev queue")
+            events = parse_queue(out)
+            if events:
+                for (kind, x, y, z) in events:
+                    r = handle_event(brain, rc, kind, x, y, z)
+                    print(f"[bridge] {r}")
+                rc.command("data modify storage schatveld:ev queue set value []")
+            if once:
+                return events
+            time.sleep(poll)
+
+
+if __name__ == "__main__":
+    import sys
+    pw = sys.argv[1] if len(sys.argv) > 1 else "schatveld"
+    run(password=pw)

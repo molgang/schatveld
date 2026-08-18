@@ -1,11 +1,48 @@
 # Schatveld Weddewarden
 
 Een rollenspel over **schatgraven, boeren en handhaven** in het echte marschveld van
-**Bremerhaven-Nord / Land Wursten** (Weddewarden, 53.6008 N, 8.5314 E). Twee
-implementaties die hetzelfde spelconcept delen:
+**Bremerhaven-Nord / Land Wursten** (Weddewarden, 53.6008 N, 8.5314 E).
 
+## One Brain, Two Worlds
+Eén **autoritatieve Python-"brain"** (`pybrain/`) draait alle spelregels — het veld
+0–100, de loot-randomizer, de economie en handhaving — en stuurt **twee werelden**
+tegelijk aan die exact dezelfde staat delen:
+
+```
+        Python BRAIN (pybrain/schatveld_core + api.py)
+          │ RCON (TCP)                    │ HTTP (HttpService)
+   Minecraft (Fabric + Modrinth-mods     Roblox (Luau)
+   + datapack die dig-events emit)        Api.lua → dezelfde brain
+```
+
+- **`pybrain/`** — de brain: `schatveld_core/` (pure Python, pytest 7/7), `api.py`
+  (HTTP-API), `rcon.py` (mini-RCON, 0 deps), `mc_bridge.py` (datapack↔brain),
+  en **`schatveld.ipynb`** — het controlecentrum dat alles vanuit Python aanstuurt.
+- **`roblox/`** — de Roblox-game (Luau + Rojo); `Api.lua` praat met de brain (`USE_BRAIN=true`).
+- **`datapack/`** — Minecraft Java 1.21-datapack + Modrinth `.mrpack`; de datapack emit
+  graaf/detector-events naar `storage schatveld:ev`, de brain berekent de vondst en
+  pusht die terug.
+
+**Bewezen (live):** een echte lokale **Fabric 1.21.10-server met een Modrinth-mod**
+(fabric-api) + de datapack; de brug injecteert een graaf-event → de brain rekent
+metaalwaarde 84 → "Handgesmede spijkers" → geeft het item via RCON. Dezelfde
+`field.value(7,7)=84` in de Roblox-API én Minecraft → één brein, twee werelden.
+
+### Zelf draaien (Python + Minecraft)
+```
+python3 pybrain/api.py &                 # de brain-API (poort 8791)
+bash    pybrain/run_server.sh            # lokale Fabric-server + Modrinth-mod + datapack (Java 21 in .mcserver/)
+python3 pybrain/mc_bridge.py schatveld   # de brug: datapack-events -> brain-loot -> RCON
+jupyter notebook schatveld.ipynb         # of: het complete controlecentrum
+```
+(De server + Java 21 leven in `.mcserver/`, buiten git. `run_server.sh` en het
+`.ipynb` regelen de rest.)
+
+---
+
+De twee front-ends afzonderlijk (werken ook standalone):
 - **`roblox/`** — de volledige game (Luau + Rojo) voor Roblox Studio.
-- **`datapack/`** — een Minecraft Java 1.21-datapack (geen mod) + Modrinth `.mrpack`.
+- **`datapack/`** — een Minecraft Java 1.21-datapack (geen mod nodig) + Modrinth `.mrpack`.
 
 ## Concept
 

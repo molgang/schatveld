@@ -61,6 +61,8 @@ mcf(f"data/{NS}/function/load.mcfunction", [
     "scoreboard objectives add dig_podzol minecraft.mined:minecraft.podzol",
     "# hash-constanten",
     "scoreboard players set #c101 sv_metal 101",
+    "# event-queue init (one brain: Python leest hier de dig/scan-events)",
+    "data modify storage schatveld:ev queue set value []",
     "tellraw @a {\"text\":\"[Schatveld] geladen — /function schatveld:menu voor rol & detector\",\"color\":\"gold\"}",
 ])
 
@@ -134,11 +136,10 @@ w(f"data/{NS}/advancement/use_detector.json", {
 })
 mcf(f"data/{NS}/function/on_detect.mcfunction", [
     "advancement revoke @s only schatveld:use_detector",
-    "function schatveld:calc_metal",
-    "execute store result storage schatveld:tmp v int 1 run scoreboard players get @s sv_metal",
-    "tellraw @s [\"\",{\"text\":\"Metaaldetector: \",\"color\":\"aqua\"},{\"score\":{\"name\":\"@s\",\"objective\":\"sv_metal\"},\"color\":\"yellow\",\"bold\":true},{\"text\":\"/100\",\"color\":\"gray\"}]",
-    "execute if score @s sv_metal matches ..9 run tellraw @s {\"text\":\"  < 10 → hier ligt alleen roestig ijzer.\",\"color\":\"dark_gray\"}",
-    "execute if score @s sv_metal matches 80.. run tellraw @s {\"text\":\"  hoge waarde! graaf hier.\",\"color\":\"gold\"}",
+    "# emit een scan-event; de Python-brug leest de metaalwaarde uit het gedeelde veld",
+    "data modify storage schatveld:ev tmp set value {kind:\"scan\"}",
+    "data modify storage schatveld:ev tmp.Pos set from entity @s Pos",
+    "data modify storage schatveld:ev queue append from storage schatveld:ev tmp",
 ])
 
 # ---- graven detecteren (tick) → loot per band; <10 altijd roestig ijzer ----
@@ -149,21 +150,17 @@ for o in DIG_OBJS:
     tick.append(f"scoreboard players set @a {o} 0")
 mcf(f"data/{NS}/function/tick.mcfunction", tick)
 
+# ONE BRAIN: de datapack GEEFT geen loot meer zelf — hij EMIT het dig-event naar
+# storage schatveld:ev queue; de Python-brug leest dit via RCON, berekent de vondst
+# (identiek aan de Roblox-kant) en pusht die terug. Zo is Python de enige autoriteit.
 mcf(f"data/{NS}/function/on_dig.mcfunction", [
-    "function schatveld:calc_metal",
-    "# < 10 = ALTIJD roestig ijzer",
-    "execute if score @s sv_metal matches ..9 run loot give @s loot schatveld:finds/rusty_iron",
-    "execute if score @s sv_metal matches ..9 run tellraw @s {\"text\":\"Gevonden: roestig ijzer (metaalwaarde < 10)\",\"color\":\"dark_gray\"}",
-    "# banden",
-    "execute if score @s sv_metal matches 10..39 run function schatveld:reward/common",
-    "execute if score @s sv_metal matches 40..79 run function schatveld:reward/mid",
-    "execute if score @s sv_metal matches 80..100 run function schatveld:reward/rich",
+    "function schatveld:emit_dig",
 ])
-for band, table in (("common","finds_common"),("mid","finds_mid"),("rich","finds_rich")):
-    mcf(f"data/{NS}/function/reward/{band}.mcfunction", [
-        f"loot give @s loot schatveld:finds/{table}",
-        "tellraw @s [\"\",{\"text\":\"Vondst (metaalwaarde \",\"color\":\"green\"},{\"score\":{\"name\":\"@s\",\"objective\":\"sv_metal\"}},{\"text\":\")\",\"color\":\"green\"}]",
-    ])
+mcf(f"data/{NS}/function/emit_dig.mcfunction", [
+    "data modify storage schatveld:ev tmp set value {kind:\"dig\"}",
+    "data modify storage schatveld:ev tmp.Pos set from entity @s Pos",
+    "data modify storage schatveld:ev queue append from storage schatveld:ev tmp",
+])
 
 # ---------------------------------------------------------------- loot tables
 def loot(entries, rolls=1):

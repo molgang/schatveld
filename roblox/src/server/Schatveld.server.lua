@@ -11,6 +11,11 @@ local MetalField = require(Shared:WaitForChild("MetalField"))
 local LootTables = require(Shared:WaitForChild("LootTables"))
 local Cadastre   = require(Shared:WaitForChild("Cadastre"))
 local Net        = require(Shared:WaitForChild("Net"))
+local Api        = require(Shared:WaitForChild("Api"))
+-- ONE BRAIN: als de Python-brain (pybrain/api.py) bereikbaar is, is die de
+-- autoriteit voor de vondst — exact hetzelfde resultaat als de Minecraft-wereld.
+-- Anders valt de server terug op de lokale MetalField/LootTables.
+local USE_BRAIN = true
 
 Net.setupServer()
 local WORLD_SEED = 20260818
@@ -125,6 +130,24 @@ Net.event("Dig").OnServerEvent:Connect(function(plr, b)
 	local onOwnLand = parcel and parcel.owner == tostring(plr.UserId)
 	local illegal = (not p.permit) or (parcel and parcel.owner and not onOwnLand)
 	table.insert(p.digLog, { col = col, row = row, at = os.time(), illegal = illegal } :: any)
+
+	-- One brain: vraag de Python-brain om de vondst (gedeeld met Minecraft).
+	if USE_BRAIN then
+		local api = Api.dig(tostring(plr.UserId), col, row)
+		if api and api.ok then
+			p.inv[api.find.id] = (p.inv[api.find.id] or 0) + 1
+			p.coins += api.payout
+			if api.schatzregal then p.rep += 5 end
+			if api.illegal then p.rep -= 3 end
+			local m = string.format("Metaalwaarde %d — gevonden: %s (via Python-brain, €%d)",
+				api.metal, api.find.name, api.payout)
+			if api.schatzregal then m ..= "  · Schatzregal → Land Bremen" end
+			if api.illegal then m ..= "  ⚠ Raubgrabung" end
+			notify(plr, m, api.illegal and "warn" or "good")
+			sync(plr)
+			return
+		end
+	end
 
 	local ctx = Cadastre.context(col, row)
 	local find, value = MetalField.dig(col, row, WORLD_SEED, ctx, rng)
