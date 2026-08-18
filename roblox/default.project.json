@@ -22,9 +22,44 @@
     "Lighting": {
       "$className": "Lighting",
       "$properties": {
+        "Technology": "Future",
         "ClockTime": 9.5,
-        "Ambient": [0.35, 0.37, 0.4],
-        "OutdoorAmbient": [0.45, 0.47, 0.5]
+        "GeographicLatitude": 53.6,
+        "Brightness": 2.2,
+        "ExposureCompensation": 0.15,
+        "EnvironmentDiffuseScale": 1,
+        "EnvironmentSpecularScale": 1,
+        "ShadowSoftness": 0.4,
+        "Ambient": [0.32, 0.34, 0.38],
+        "OutdoorAmbient": [0.44, 0.47, 0.52]
+      },
+      "Atmosphere": {
+        "$className": "Atmosphere",
+        "$properties": {
+          "Density": 0.34,
+          "Offset": 0.1,
+          "Color": [0.79, 0.83, 0.86],
+          "Decay": [0.62, 0.68, 0.74],
+          "Glare": 0.35,
+          "Haze": 1.6
+        }
+      },
+      "Bloom": {
+        "$className": "BloomEffect",
+        "$properties": { "Intensity": 0.7, "Size": 24, "Threshold": 1.15 }
+      },
+      "SunRays": {
+        "$className": "SunRaysEffect",
+        "$properties": { "Intensity": 0.12, "Spread": 0.85 }
+      },
+      "ColorGrade": {
+        "$className": "ColorCorrectionEffect",
+        "$properties": {
+          "Brightness": 0.0,
+          "Contrast": 0.12,
+          "Saturation": 0.08,
+          "TintColor": [0.99, 0.98, 0.96]
+        }
       }
     }
   }

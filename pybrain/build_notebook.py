@@ -80,6 +80,29 @@ code(f"""import subprocess
 r = subprocess.run([sys.executable, r"{ROOT}/datapack/build_datapack.py"], capture_output=True, text=True)
 print(r.stdout.strip().splitlines()[-2:] if r.stdout else r.stderr[-300:])""")
 
+md("## 6. v2 — rijkere wereld: bouw de marsch live (RCON) + render isometrisch")
+code(f"""# Bouwt het marschland (Watt/Deich/Wurt/Gräben/gewassen) op de live server en
+# rendert daarna dezelfde spec als isometrisch beeld (werkt ook zonder server: dan
+# alleen de render). Zie pybrain/marsh.py voor de gedeelde spec.
+import subprocess
+if MC_OK:
+    r = subprocess.run([sys.executable, r"{HERE}/build_marsh.py", "0", "0"],
+                       capture_output=True, text=True)
+    print(r.stdout.strip()[-600:] or r.stderr[-400:])
+else:
+    print("(geen live server — sla de live bouw over, render alleen het beeld)")
+subprocess.run([sys.executable, r"{ROOT}/data/render_marsh_iso.py"], check=True)
+from IPython.display import Image
+Image(filename=r"{ROOT}/data/schatveld_marsh_iso.png")""")
+
+md("## 7. v2 — resource pack + verrijkte Modrinth-packs (incl. Iris-workaround)")
+code(f"""import subprocess
+subprocess.run([sys.executable, r"{ROOT}/resourcepack/build_resourcepack.py"], check=True)
+subprocess.run([sys.executable, r"{ROOT}/datapack/build_mrpack.py"], check=True)
+print("Shaders op Apple Silicon: macOS geeft max OpenGL 4.1; Iris>=1.7/MC1.21 eist 4.3.")
+print("-> schatveld-shaders-1.20.1.mrpack = MC 1.20.1 + Iris 1.6.17 + Sodium 0.5.3 +")
+print("   Complementary Reimagined = shaders die WEL natief op OpenGL 4.1 draaien.")""")
+
 md("""## Klaar
 - **Roblox**: `roblox/` (Rojo) — `Api.lua` praat met deze brain (`USE_BRAIN=true`).
 - **Minecraft**: `datapack/` + `pybrain/mc_bridge.py` — datapack emit → brain loot → RCON.
