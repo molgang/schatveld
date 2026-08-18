@@ -28,6 +28,49 @@ tegelijk aan die exact dezelfde staat delen:
 metaalwaarde 84 → "Handgesmede spijkers" → geeft het item via RCON. Dezelfde
 `field.value(7,7)=84` in de Roblox-API én Minecraft → één brein, twee werelden.
 
+## v2 — bredere, grafisch rijkere wereld (Minecraft-zwaar)
+
+Bovenop de MVP is er een **rijkere versie** met meer grafische objecten, echte shaders
+en meer Modrinth-mods:
+
+- **Marschwereld gebouwd** (`pybrain/marsh.py` + `pybrain/build_marsh.py`): het landschap
+  van Weddewarden wordt **live via RCON** (`/fill`/`/setblock`) op de server gebouwd —
+  Watt/water aan de westrand, een **Deich** (dijk), een verhoogde **Wurt** met boerderij,
+  **Gräben** (sloten) tussen de percelen en **gewas-Flurstücke** (graan/aardappel/biet/
+  klaver). `build_marsh.py` verifieert de bouw met `execute if block` (5/5 steekproeven ✓).
+- **Resource pack** (`resourcepack/build_resourcepack.py`, PIL): procedurele 16×16-texturen
+  die de stand-in-items vervangen door thematische vondsten — een echte **metaaldetector**,
+  **barnsteen**, een bronzen **Wurt-fibula**, **gouden munt**, **roestige spijkers**,
+  **ploegijzer** en een **potscherf**.
+- **Verrijkte Modrinth-packs** (`datapack/build_mrpack.py`, echte versies + sha512 uit de
+  Modrinth-API):
+  - `schatveld-world-1.21.10.mrpack` — de spelwereld: Sodium/Lithium/FerriteCore/
+    EntityCulling + **EMF/ETF** (entity-model/-texture-features) + **BetterArcheology** +
+    fabric-api, mét de datapack én resource pack in `overrides/`.
+  - `schatveld-shaders-1.20.1.mrpack` — **de Iris-workaround voor Apple Silicon** (zie hieronder).
+- **Roblox-opfris** (`roblox/default.project.json`): `Lighting.Technology = Future` +
+  Atmosphere (kust-nevel) + Bloom + SunRays + ColorCorrection, breedtegraad 53,6° N.
+- **Demonstratie** (`data/render_marsh_iso.py`): een **isometrische voxel-render** van het
+  écht-gebouwde marschland → `data/schatveld_marsh_iso.png`.
+
+### Shaders op een Mac (Apple Silicon) — de Iris-workaround
+macOS geeft **maximaal OpenGL 4.1** (Apple heeft OpenGL bevroren; dat is niet te
+"upgraden"). **Iris ≥ 1.7 / MC 1.21 eist OpenGL 4.3** → daarom de crash. De betrouwbare
+oplossing is **niet** een zware Zink/MoltenVK-vertaallaag (fragiel op macOS-GLFW), maar
+shaders draaien op de **laatste 4.1-native combinatie**: **MC 1.20.1 + Iris 1.6.17 +
+Sodium 0.5.3 + Complementary Reimagined** — precies wat `schatveld-shaders-1.20.1.mrpack`
+levert (Iris-config zet de shader meteen aan). Installeer die pack via een Modrinth-launcher
+en de shaders renderen **natief** op de M2. (De 1.21.10-spelwereld draait bewust zónder
+Iris — daar geven Sodium + EMF/ETF + de resource pack de grafische upgrade zonder de 4.3-muur.)
+
+Bouwen:
+```
+python3 resourcepack/build_resourcepack.py   # -> resourcepack/build/schatveld_resources.zip
+python3 datapack/build_mrpack.py             # -> beide .mrpack's (echte Modrinth-versies)
+python3 pybrain/build_marsh.py               # bouwt de marsch LIVE op de server (RCON) + verifieert
+python3 data/render_marsh_iso.py             # -> data/schatveld_marsh_iso.png (demonstratie)
+```
+
 ### Zelf draaien (Python + Minecraft)
 ```
 python3 pybrain/api.py &                 # de brain-API (poort 8791)

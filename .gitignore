@@ -1,4 +1,5 @@
 datapack/build/
+resourcepack/build/
 .mcserver/
 **/__pycache__/
 **/.ipynb_checkpoints/
