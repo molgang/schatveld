@@ -1,0 +1,17 @@
+{
+  "criteria": {
+    "use": {
+      "trigger": "minecraft:item_used_on_block",
+      "conditions": {
+        "item": {
+          "predicates": {
+            "minecraft:custom_data": "{sv_detector:1b}"
+          }
+        }
+      }
+    }
+  },
+  "rewards": {
+    "function": "schatveld:on_detect"
+  }
+}
