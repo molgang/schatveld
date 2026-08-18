@@ -1,0 +1,6 @@
+datapack/build/
+.mcserver/
+**/__pycache__/
+**/.ipynb_checkpoints/
+pybrain/state.json
+.DS_Store

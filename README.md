@@ -1,2 +1,97 @@
-# schatveld
-Schatveld Weddewarden — schatgraven/boer/politie in het Land-Wursten marschveld (Roblox + Minecraft-datapack)
+# Schatveld Weddewarden
+
+Een rollenspel over **schatgraven, boeren en handhaven** in het echte marschveld van
+**Bremerhaven-Nord / Land Wursten** (Weddewarden, 53.6008 N, 8.5314 E).
+
+## One Brain, Two Worlds
+Eén **autoritatieve Python-"brain"** (`pybrain/`) draait alle spelregels — het veld
+0–100, de loot-randomizer, de economie en handhaving — en stuurt **twee werelden**
+tegelijk aan die exact dezelfde staat delen:
+
+```
+        Python BRAIN (pybrain/schatveld_core + api.py)
+          │ RCON (TCP)                    │ HTTP (HttpService)
+   Minecraft (Fabric + Modrinth-mods     Roblox (Luau)
+   + datapack die dig-events emit)        Api.lua → dezelfde brain
+```
+
+- **`pybrain/`** — de brain: `schatveld_core/` (pure Python, pytest 7/7), `api.py`
+  (HTTP-API), `rcon.py` (mini-RCON, 0 deps), `mc_bridge.py` (datapack↔brain),
+  en **`schatveld.ipynb`** — het controlecentrum dat alles vanuit Python aanstuurt.
+- **`roblox/`** — de Roblox-game (Luau + Rojo); `Api.lua` praat met de brain (`USE_BRAIN=true`).
+- **`datapack/`** — Minecraft Java 1.21-datapack + Modrinth `.mrpack`; de datapack emit
+  graaf/detector-events naar `storage schatveld:ev`, de brain berekent de vondst en
+  pusht die terug.
+
+**Bewezen (live):** een echte lokale **Fabric 1.21.10-server met een Modrinth-mod**
+(fabric-api) + de datapack; de brug injecteert een graaf-event → de brain rekent
+metaalwaarde 84 → "Handgesmede spijkers" → geeft het item via RCON. Dezelfde
+`field.value(7,7)=84` in de Roblox-API én Minecraft → één brein, twee werelden.
+
+### Zelf draaien (Python + Minecraft)
+```
+python3 pybrain/api.py &                 # de brain-API (poort 8791)
+bash    pybrain/run_server.sh            # lokale Fabric-server + Modrinth-mod + datapack (Java 21 in .mcserver/)
+python3 pybrain/mc_bridge.py schatveld   # de brug: datapack-events -> brain-loot -> RCON
+jupyter notebook schatveld.ipynb         # of: het complete controlecentrum
+```
+(De server + Java 21 leven in `.mcserver/`, buiten git. `run_server.sh` en het
+`.ipynb` regelen de rest.)
+
+---
+
+De twee front-ends afzonderlijk (werken ook standalone):
+- **`roblox/`** — de volledige game (Luau + Rojo) voor Roblox Studio.
+- **`datapack/`** — een Minecraft Java 1.21-datapack (geen mod nodig) + Modrinth `.mrpack`.
+
+## Concept
+
+Kies een rol:
+
+| Rol | Doel |
+|---|---|
+| **Archeoloog** | Koop schep + **metaaldetector** in de winkel; zoek en graaf. De detector toont per blok een **getal 0–100** (kans op metaalhoudend materiaal). Graven vereist een **Nachforschungsgenehmigung** (vergunning) — anders is het *Raubgrabung*. |
+| **Boer** | Bescherm je **Flurstücke** (kadaster) tegen schatgravers, doe een goede **gewasrotatie** met ploegen, en houd je aan de **pesticide-regels**. |
+| **Politie** | Beboet schatgravers zonder vergunning en boeren die te veel/verboden pesticide gebruiken of niet-eigen land (kadastraal) gebruiken. |
+
+**De 0–100-regel:** elk blok heeft een deterministische metaalwaarde. **< 10 = altijd
+roestig ijzer.** Hoger = kans op agrarisch ijzer, munten, en (zeldzaam) barnsteen,
+Fibulae en Wurt-artefacten. Significante vondsten vallen onder het **Schatzregal**
+(staatsbezit → de speler krijgt vindersloon).
+
+## Realisme (gegrond, zie `data/grounding.md`)
+
+- **Landschap**: Marsch/Klei achter de Außenweser-Deich; Gräben/Siele/Schöpfwerke;
+  een verhoogde **Wurt** (woonheuvel) zoals Weddewarden / Feddersen Wierde.
+- **Vondsten**: roestig agrarisch ijzer (zeer algemeen), Feuerstein/Hühnergott en
+  kwarts (algemeen), barnsteen (occasioneel, kust), munten (zeldzaam), Wurt-
+  artefacten (zeer zeldzaam). **Geen diamanten** — dat past niet bij de regio.
+- **Recht**: Flurstück/Gemarkung/Flur-kadaster (ALKIS), Schatzregal (sinds 2023 in
+  alle 16 Länder), Nachforschungsgenehmigung, §903 BGB (eigendom), §4a PflSchAnwV
+  (5–10 m bufferzone tot water), §68 PflSchG (boetes tot €50.000).
+
+## Roblox draaien
+
+1. Installeer [Rojo](https://rojo.space) + Roblox Studio met de Rojo-plugin.
+2. `cd roblox && rojo serve` → in Studio: Rojo-plugin → **Connect**.
+3. Play. De server bouwt het veld (768 Flurstück-blokken); kies je rol; koop in de
+   winkel (**B**); beweeg de muis over blokken om de metaalwaarde te zien.
+
+Structuur: `src/shared` → ReplicatedStorage · `src/server` → ServerScriptService ·
+`src/client` → StarterPlayerScripts. Server-autoritatief (loot-RNG, geld en
+handhaving draaien uitsluitend op de server).
+
+## Minecraft-datapack draaien
+
+```
+cd datapack && python3 build_datapack.py         # -> build/schatveld_datapack.zip + schatveld.mrpack
+```
+
+- Kopieer `build/schatveld_datapack.zip` naar `<wereld>/datapacks/` (1.21–1.21.10).
+- In-game: `/function schatveld:menu` → kies rol → detector.
+- Rechtsklik grond met de detector = metaalwaarde 0–100. Graven (dirt/grass/mud/
+  clay/…) geeft vondsten; **< 10 = altijd roestig ijzer**.
+- Of installeer `schatveld.mrpack` via een Modrinth-launcher.
+
+## Licentie
+Intern bedrijfsproject (molgang / VirtualV). Vrij te gebruiken en uit te breiden.
