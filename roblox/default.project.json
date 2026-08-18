@@ -1,0 +1,31 @@
+{
+  "name": "Schatveld Weddewarden",
+  "globIgnorePaths": ["**/*.spec.lua"],
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "$className": "ReplicatedStorage",
+      "Shared": { "$path": "src/shared" }
+    },
+    "ServerScriptService": {
+      "$className": "ServerScriptService",
+      "Schatveld": { "$path": "src/server" }
+    },
+    "StarterPlayer": {
+      "$className": "StarterPlayer",
+      "StarterPlayerScripts": { "$path": "src/client" }
+    },
+    "Workspace": {
+      "$className": "Workspace",
+      "$properties": { "Gravity": 196.2 }
+    },
+    "Lighting": {
+      "$className": "Lighting",
+      "$properties": {
+        "ClockTime": 9.5,
+        "Ambient": [0.35, 0.37, 0.4],
+        "OutdoorAmbient": [0.45, 0.47, 0.5]
+      }
+    }
+  }
+}
