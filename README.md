@@ -98,6 +98,22 @@ gespiegeld over **beide werelden** (Python-brain + Luau) met guard-tests (`pytes
 genereren, de wereld live bouwen, en verbinden. Eén-commando-start: `bash pybrain/play.sh`
 (server + brain + brug), stoppen met `bash pybrain/stop.sh`.
 
+## v2.2 — content, talen & voertuigen
+
+- **Veld-staten + wegen** (`marsh.py`): realistische patchwork (mais 2-hoog, geploegd-zwart,
+  rijp graan, grasland, stoppel) + een **wegennet** (grind-causeway over de Gräben + ringweg).
+- **3D item-modellen** (`resourcepack/build_models.py`): procedurele cuboid-modellen voor de
+  **metaaldetector, schep, tractor en politieauto** (1.21.4+ `item_model`-systeem).
+- **Meertalig** (`resourcepack/lang/`): **Engels = standaard** + Duits, Frans, Russisch,
+  Spaans, Portugees (BR), Chinees, Japans, Nederlands. Alle in-game tekst loopt via
+  `{"translate":"schatveld.*"}`-keys; wissel in **Opties → Taal**.
+- **Voertuigen** (datapack-benadering): Boer krijgt een **Tractor**, Politie een **Politieauto**.
+  Rechtsklik grond met het item → berijd een bestuurbaar paard; **sluipen = parkeren**,
+  rechtsklik het paard = weer rijden. **Politie mag alleen op de weg** (boven een veld-blok
+  wordt de berijder eraf gezet); de **tractor mag overal**. `schatveld:interact` werkt alleen
+  binnen **5 blokken**. (Een echt bestuurbaar 3D-voertuig vergt een Fabric-mod; dit is de
+  datapack-benadering.)
+
 ### Zelf draaien (Python + Minecraft)
 ```
 python3 pybrain/api.py &                 # de brain-API (poort 8791)

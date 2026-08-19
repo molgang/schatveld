@@ -171,6 +171,55 @@ mcf(f"data/{NS}/function/emit_dig.mcfunction", [
     "data modify storage schatveld:ev queue append from storage schatveld:ev tmp",
 ])
 
+# ---------------------------------------------------------------- voertuigen (datapack-benadering)
+# Boer=tractor (overal), Politie=politieauto (ALLEEN op de weg). Rechtsklik grond met het
+# voertuig-item → berijd een bestuurbaar (getemd+gezadeld) paard; sluipen = parkeren,
+# rechtsklik het paard = weer rijden (vanilla). Blok-tag = velden waar de politie niet mag.
+w(f"data/{NS}/tags/block/field.json", {"values": [
+    "minecraft:farmland", "minecraft:grass_block", "minecraft:moss_block",
+    "minecraft:hay_block", "minecraft:podzol", "minecraft:coarse_dirt",
+    "minecraft:packed_mud", "minecraft:rooted_dirt",
+]})
+
+def veh_adv(kind, value):
+    w(f"data/{NS}/advancement/deploy_{kind}.json", {
+        "criteria": {"use": {"trigger": "minecraft:item_used_on_block", "conditions": {
+            "item": {"predicates": {"minecraft:custom_data": "{sv_vehicle:\"%s\"}" % value}}}}},
+        "rewards": {"function": f"{NS}:vehicle/deploy_{kind}"}})
+veh_adv("tractor", "tractor")
+veh_adv("police", "police_car")
+
+def deploy_fn(kind, key, tag):
+    return [
+        f"advancement revoke @s only schatveld:deploy_{kind}",
+        "summon minecraft:horse ~ ~ ~ {Tame:1b,SaddleItem:{id:\"minecraft:saddle\",count:1},"
+        f"Tags:[\"sv_new\",\"{tag}\",\"sv_vehicle\"],CustomNameVisible:1b,"
+        f"CustomName:'{{\"translate\":\"schatveld.item.{key}\"}}'}}",
+        "ride @s mount @e[tag=sv_new,limit=1,sort=nearest,distance=..4]",
+        "tag @e[tag=sv_new] remove sv_new",
+        f"title @s actionbar {{\"translate\":\"schatveld.vehicle.boarded\","
+        f"\"with\":[{{\"translate\":\"schatveld.item.{key}\"}}],\"color\":\"green\"}}",
+    ]
+mcf(f"data/{NS}/function/vehicle/deploy_tractor.mcfunction", deploy_fn("tractor", "tractor", "sv_tractor"))
+mcf(f"data/{NS}/function/vehicle/deploy_police.mcfunction", deploy_fn("police", "police_car", "sv_police"))
+
+# politieauto van de weg af (boven een veld-blok) → berijder eraf + waarschuwing (elke tick)
+mcf(f"data/{NS}/function/vehicle/police_check.mcfunction", [
+    "execute as @e[tag=sv_police] at @s if block ~ ~-1 ~ #schatveld:field on passengers run "
+    "title @s actionbar {\"translate\":\"schatveld.vehicle.police_offroad\",\"color\":\"red\"}",
+    "execute as @e[tag=sv_police] at @s if block ~ ~-1 ~ #schatveld:field on passengers run ride @s dismount",
+])
+with open(os.path.join(PACK, f"data/{NS}/function/tick.mcfunction"), "a", encoding="utf-8") as f:
+    f.write("function schatveld:vehicle/police_check\n")
+
+# 5-blok-interactie (politie ↔ boer): /function schatveld:interact — alleen binnen 5 blokken
+mcf(f"data/{NS}/function/interact.mcfunction", [
+    "execute as @s at @s if entity @a[distance=0.01..5] run title @s actionbar "
+    "{\"translate\":\"schatveld.vehicle.interact\",\"with\":[{\"selector\":\"@p[distance=0.01..5]\"}],\"color\":\"aqua\"}",
+    "execute as @s at @s unless entity @a[distance=0.01..5] run title @s actionbar "
+    "{\"translate\":\"schatveld.vehicle.too_far\",\"color\":\"gray\"}",
+])
+
 # ---------------------------------------------------------------- loot tables
 def loot(entries, rolls=1):
     return {"type": "minecraft:chest", "random_sequence": f"{NS}:finds",
