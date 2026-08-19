@@ -94,15 +94,16 @@ def render():
     d.text((22, 20), TITLE, font=fnt(26), fill=(230, 194, 41))
     d.text((24, 52), SUB, font=fnt(14), fill=(200, 210, 224))
 
-    # legenda
-    leg = [("Watt / Gräben (water)", "water"), ("Deich (dijk)", "deich"),
-           ("Wurt + boerderij", "planks"), ("graan", "wheat"),
-           ("aardappel", "potato"), ("biet", "beet"), ("klaver", "clover")]
-    lx, ly = 24, H - 44
+    # legenda (nu de veld-staten)
+    leg = [("Watt / Gräben", "water"), ("Deich", "deich"), ("Wurt + boerderij", "planks"),
+           ("rijp graan", "grain"), ("mais (2 hoog)", "maize"), ("grasland", "pasture"),
+           ("geploegd (zwart)", "ploughed"), ("graan-stoppel", "grain_stub"),
+           ("mais-stoppel", "maize_stub")]
+    lx, ly = 24, H - 60
     for i, (label, key) in enumerate(leg):
         col = marsh.BLOCKS[key][1]
-        bx = lx + (i % 4) * 220
-        by = ly + (i // 4) * 20
+        bx = lx + (i % 3) * 290
+        by = ly + (i // 3) * 20
         d.rectangle([bx, by, bx + 14, by + 14], fill=col, outline=(60, 66, 78))
         d.text((bx + 20, by), label, font=fnt(13), fill=(206, 214, 226))
 
