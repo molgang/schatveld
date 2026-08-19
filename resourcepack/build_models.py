@@ -186,10 +186,18 @@ def write_all():
         json.dump(model_json(boxes), open(os.path.join(mdl, f"{name}.json"), "w"), indent=2)
         json.dump({"model": {"type": "minecraft:model", "model": f"schatveld:item/{name}"}},
                   open(os.path.join(itm, f"{name}.json"), "w"), indent=2)
-    # 2D pixel-art iconen: texture + item/generated-model + items-entry
+    # 2D pixel-art iconen: texture + item/generated-model + items-entry.
+    # Als er een ECHTE bron-textuur in resourcepack/textures/item/<name>.png staat, gebruik die
+    # (bijv. de door de owner aangeleverde metaaldetector); anders de procedurele icoon-functie.
+    src_dir = os.path.join(HERE, "textures", "item")
     for name, fn in FLAT_ICONS.items():
-        b = io.BytesIO(); Image.fromarray(fn(), "RGBA").save(b, "PNG")
-        open(os.path.join(tex, f"{name}.png"), "wb").write(b.getvalue())
+        src = os.path.join(src_dir, f"{name}.png")
+        if os.path.isfile(src):
+            with open(src, "rb") as s:
+                open(os.path.join(tex, f"{name}.png"), "wb").write(s.read())
+        else:
+            b = io.BytesIO(); Image.fromarray(fn(), "RGBA").save(b, "PNG")
+            open(os.path.join(tex, f"{name}.png"), "wb").write(b.getvalue())
         json.dump({"parent": "minecraft:item/generated",
                    "textures": {"layer0": f"schatveld:item/{name}"}},
                   open(os.path.join(mdl, f"{name}.json"), "w"), indent=2)
