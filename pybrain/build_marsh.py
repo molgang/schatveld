@@ -34,9 +34,10 @@ def verify(rc, regions):
     checks = [
         ("Watt-water westrand", 1, marsh.BASE, 5, "minecraft:water"),
         ("Deich-gras",          3, marsh.BASE + 3, 5, "minecraft:grass_block"),
-        ("Graben-water",       12, marsh.BASE, 10, "minecraft:water"),
-        ("Wurt-gras",           7, marsh.BASE + 2, 24, "minecraft:grass_block"),
-        ("boerderij-dak",      11, marsh.BASE + 6, 27, "minecraft:dark_oak_planks"),
+        ("sloot-water",        11, marsh.BASE, 0, "minecraft:water"),
+        ("verharde weg",       12, marsh.BASE, 0, "minecraft:gravel"),
+        ("veld (rijp graan)",   5, marsh.BASE + 1, 0, "minecraft:hay_block"),
+        ("boerderij-dak",      17, marsh.BASE + 6, 22, "minecraft:dark_oak_planks"),
     ]
     ok = 0
     for (label, x, y, z, block) in checks:
