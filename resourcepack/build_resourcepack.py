@@ -153,8 +153,10 @@ def main():
     out = os.path.join(BUILD, "schatveld_resources.zip")
     mcmeta = {
         "pack": {
-            "pack_format": 34,
-            "supported_formats": {"min_inclusive": 15, "max_inclusive": 99},
+            # 1.21.10 resource-pack-formaat = 69; 1.21.9+ vereist min_format/max_format
+            "pack_format": 69,
+            "min_format": 34,
+            "max_format": 69,
             "description": "Schatveld — vondsten & metaaldetector (Weddewarden)",
         }
     }
