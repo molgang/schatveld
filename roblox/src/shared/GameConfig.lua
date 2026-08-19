@@ -10,6 +10,7 @@ GameConfig.WORLD = {
 	region = "Land Wursten · Bremerhaven-Nord",
 	lat = 53.6008, lon = 8.5314,           -- 53°36'03"N 8°31'53"E
 	landscape = "Marsch (Klei) achter de Außenweser-Deich",
+	seed = 20260818,                       -- ÉÉN seedbron (client+server+MC lezen dit)
 }
 
 -- Grid: elk blok = 1 Flurstück-cel op het maaiveld.
@@ -71,8 +72,43 @@ GameConfig.FINES = {
 
 -- Schatzregal: significante vondsten worden staatsbezit; speler krijgt vindersloon.
 GameConfig.SCHATZREGAL = {
-	finderFeeFraction = 0.35,   -- speler ontvangt aandeel; rest = "Land Bremen"
+	finderFeeFraction = 0.35,   -- legaal aangemeld: speler ontvangt dit aandeel
 	significantValue = 200,     -- vondsten >= dit vallen onder het Schatzregal
+	illegalFeeFraction = 0.10,  -- Raubgrabung: beschlagnahmt, slechts heler-waarde
 }
+
+-- Uitbetalingsvloer: significante vondst betaalt nooit minder dan de duurste gewone
+-- vondst -> zeldzamer levert ALTIJD meer op (geen inversie).
+GameConfig.PAYOUT = { softCap = 130 }
+
+-- Startkapitaal + rol-startkit (mirror van config.STARTING; ÉÉN bron per wereld).
+GameConfig.STARTING = {
+	coins = 250,
+	archeoloogKit = { "Schep", "Metaaldetector" },
+	archeoloogCoins = 300,
+}
+
+-- Landesmuseum: eerste vondst-soort = Erstfund-bonus.
+GameConfig.MUSEUM = { erstfundBonusFraction = 0.5, erstfundRep = 2 }
+
+-- Eerste doel per rol (vervangt de verdwijnende toast).
+GameConfig.OBJECTIVES = {
+	Archeoloog = "Koop een Nachforschungsgenehmigung (€300), zoek hoge metaalwaarden en graaf legaal.",
+	Boer = "Ploeg je 4 Flurstücke met góede vruchtwisseling (wissel het gewas!).",
+	Politie = "Betrap een Raubgräber of pesticide-overtreder en beboet hem.",
+}
+
+-- Reputatie-rangen (maakt rep zichtbare progressie).
+GameConfig.RANKS = {
+	{ -999, "Verdächtig" }, { 0, "Sondengänger" }, { 10, "Feldforscher" },
+	{ 25, "Denkmalpfleger" }, { 50, "Landesarchäologe" },
+}
+function GameConfig.rankOf(rep: number): string
+	local title = GameConfig.RANKS[1][2]
+	for _, r in ipairs(GameConfig.RANKS) do
+		if rep >= r[1] then title = r[2] end
+	end
+	return title
+end
 
 return GameConfig

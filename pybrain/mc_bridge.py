@@ -33,12 +33,17 @@ def parse_queue(snbt: str):
     return events
 
 
-def _mc_give(rc, x, y, z, mc_item, count, msg, color="green"):
-    # geef aan de dichtstbijzijnde speler bij de graaflocatie + meld het
-    rc.command(f"execute positioned {x:.2f} {y:.2f} {z:.2f} run "
-               f"give @p[distance=..6] {mc_item} {count}")
-    rc.command(f"execute positioned {x:.2f} {y:.2f} {z:.2f} run "
-               f'tellraw @p[distance=..8] {{"text":"{msg}","color":"{color}"}}')
+def _mc_give(rc, x, y, z, mc_item, count, msg, color="green", special=False):
+    # geef aan de dichtstbijzijnde speler bij de graaflocatie + juice (deeltjes/geluid/actionbar)
+    at = f"execute positioned {x:.2f} {y:.2f} {z:.2f} run"
+    rc.command(f"{at} give @p[distance=..6] {mc_item} {count}")
+    # aarde-explosie + graafgeluid; bijzondere vondst = extra klank
+    rc.command(f'{at} particle minecraft:block{{block_state:{{Name:"minecraft:dirt"}}}} '
+               f"{x:.2f} {y+0.5:.2f} {z:.2f} 0.3 0.3 0.3 0.1 30")
+    rc.command(f"{at} playsound minecraft:block.gravel.break block @p[distance=..8] {x:.2f} {y:.2f} {z:.2f} 1 1")
+    if special:
+        rc.command(f"{at} playsound minecraft:entity.player.levelup block @p[distance=..8] {x:.2f} {y:.2f} {z:.2f} 1 1.4")
+    rc.command(f'{at} title @p[distance=..8] actionbar {{"text":"{msg}","color":"{color}"}}')
 
 
 def handle_event(brain, rc, kind, x, y, z):
@@ -56,10 +61,20 @@ def handle_event(brain, rc, kind, x, y, z):
     res = brain.dig(MC_USER, col, row)
     find = res["find"]
     label = find["name"].replace('"', "'")
-    tag = " [Schatzregal → Land Bremen]" if res["schatzregal"] else ""
+    if res.get("confiscated"):
+        tag = " [Schatzregal -> beschlagnahmt]"
+    elif res["schatzregal"]:
+        tag = " [Schatzregal -> Land Bremen]"
+    else:
+        tag = ""
+    special = res["schatzregal"] or res.get("firstFind")
     _mc_give(rc, x, y, z, find["mc"], 1,
-             f"Python-brain: metaal {res['metal']} -> {label} (EUR {res['payout']}){tag}",
-             "gold" if res["schatzregal"] else "green")
+             f"metaal {res['metal']} -> {label} (EUR {res['payout']}){tag}",
+             "gold" if res["schatzregal"] else "green", special=special)
+    if res.get("firstFind"):
+        rc.command(f'execute positioned {x:.2f} {y:.2f} {z:.2f} run tellraw @p[distance=..8] '
+                   f'["",{{"text":"Neu im Landesmuseum: ","color":"gold","bold":true}},'
+                   f'{{"text":"{label} ({res["museum"]}/{res["museumTotal"]})","color":"yellow"}}]')
     return ("dig", v, find["name"])
 
 

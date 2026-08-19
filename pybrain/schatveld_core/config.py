@@ -14,6 +14,19 @@ ROLES = ["Boer", "Archeoloog", "Politie"]
 
 METAL = {"rustyThreshold": 10, "detectorRange": 3}
 
+# Startkapitaal + rol-startkit (ÉÉN bron; Lua/Minecraft/demo lezen dit, geen losse literals).
+# Archeoloog krijgt schep + detector gratis en genoeg munten om de vergunning te kopen,
+# zodat de kern-loop meteen legaal te spelen is (geen Raubgrabung-softlock).
+STARTING = {"coins": 250, "archeoloogKit": ["Schep", "Metaaldetector"], "archeoloogCoins": 300}
+
+# Objectief per rol (eerste doel; vervangt de verdwijnende toast).
+OBJECTIVES = {
+    "Archeoloog": "Koop een Nachforschungsgenehmigung (€300), zoek blokken met hoge "
+                  "metaalwaarde en graaf legaal.",
+    "Boer": "Ploeg je 4 Flurstücke met góede vruchtwisseling (wissel het gewas!).",
+    "Politie": "Betrap een Raubgräber of pesticide-overtreder en beboet hem.",
+}
+
 SHOP = {
     "Schep": {"price": 50, "tool": "Schep", "desc": "graven (basis)"},
     "Metaaldetector": {"price": 180, "tool": "Metaaldetector",
@@ -45,4 +58,18 @@ FINES = {
     "PesticideBuffer": 300, "PesticideBanned": 800,
 }
 
-SCHATZREGAL = {"finderFeeFraction": 0.35, "significantValue": 200}
+SCHATZREGAL = {"finderFeeFraction": 0.35, "significantValue": 200,
+               # legaal: 35% vindersloon; illegaal: object wordt beschlagnahmt, alleen
+               # 10% heler-waarde. Zo verdient de €300-vergunning zich terug (echte ROI).
+               "illegalFeeFraction": 0.10}
+
+# Uitbetalingsvloer: een significante vondst betaalt nooit minder dan de duurste
+# gewone vondst (=coin_medieval 120), zodat zeldzamer ALTIJD meer oplevert (geen inversie).
+PAYOUT = {"softCap": 130}
+
+# Landesmuseum: eerste keer dat je een vondst-soort vindt = Erstfund-bonus.
+MUSEUM = {"erstfundBonusFraction": 0.5, "erstfundRep": 2}
+
+# Reputatie-rangen (maakt rep zichtbaar/betekenisvol als progressie).
+RANKS = [(-999, "Verdächtig"), (0, "Sondengänger"), (10, "Feldforscher"),
+         (25, "Denkmalpfleger"), (50, "Landesarchäologe")]

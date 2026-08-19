@@ -29,12 +29,10 @@ say("═══ SCHATVELD — live speelsessie (één brain, twee werelden) ═�
 
 # --- Archeoloog ---
 say("Dr. Anna (Archeoloog) betreedt Weddewarden")
-post("/join", user="anna", role="Archeoloog")
-brain_api.BRAIN._p("anna")["coins"] = 600      # startbudget voor gereedschap + vergunning
-for it in ("Schep", "Metaaldetector", "Nachforschungsgenehmigung"):
-    b = post("/buy", user="anna", item=it)
-    assert b.get("ok"), f"koop {it} mislukt: {b}"
-say("   koopt schep + metaaldetector + opgravingsvergunning (legaal graven)")
+post("/join", user="anna", role="Archeoloog")   # startkit: schep + detector + 300 munten
+b = post("/buy", user="anna", item="Nachforschungsgenehmigung")
+assert b.get("ok"), f"koop vergunning mislukt: {b}"
+say("   krijgt startkit (schep + metaaldetector) en koopt de opgravingsvergunning (legaal graven)")
 # scan een rijke strook en graaf de 4 beste blokken
 region = [(c, r) for c in range(4, 12) for r in range(0, 6)]
 region.sort(key=lambda cr: field.value(*cr), reverse=True)

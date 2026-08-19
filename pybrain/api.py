@@ -65,6 +65,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(BRAIN.parcel(_int(qs, "col"), _int(qs, "row")) or {})
         if u.path == "/state":
             return self._send(BRAIN.state(qs.get("user", ["?"])[0]))
+        if u.path == "/museum":
+            return self._send(BRAIN.museum(qs.get("user", ["?"])[0]))
         return self._send({"error": "not found"}, 404)
 
     def do_POST(self):
