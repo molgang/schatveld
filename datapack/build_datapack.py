@@ -61,6 +61,10 @@ mcf(f"data/{NS}/function/load.mcfunction", [
     "scoreboard objectives add dig_podzol minecraft.mined:minecraft.podzol",
     "# hash-constanten",
     "scoreboard players set #c101 sv_metal 101",
+    "# solo/standalone-modus AAN by default (loot uit de datapack zelf, geen brain nodig).",
+    "# De Python-brug zet #solo op 0 zodra die verbindt → dan is de brain de autoriteit.",
+    "scoreboard objectives add sv_flags dummy",
+    "scoreboard players set #solo sv_flags 1",
     "# event-queue init (one brain: Python leest hier de dig/scan-events)",
     "data modify storage schatveld:ev queue set value []",
     "tellraw @a {\"translate\":\"schatveld.loaded\",\"color\":\"gold\"}",
@@ -145,10 +149,19 @@ w(f"data/{NS}/advancement/use_detector.json", {
 })
 mcf(f"data/{NS}/function/on_detect.mcfunction", [
     "advancement revoke @s only schatveld:use_detector",
-    "# emit een scan-event; de Python-brug leest de metaalwaarde uit het gedeelde veld",
+    # solo → datapack toont zelf de waarde; brain-modus → emit een scan-event
+    "execute if score #solo sv_flags matches 1 run function schatveld:solo/detect",
+    "execute if score #solo sv_flags matches 0 run function schatveld:emit_scan",
+])
+mcf(f"data/{NS}/function/emit_scan.mcfunction", [
     "data modify storage schatveld:ev tmp set value {kind:\"scan\"}",
     "data modify storage schatveld:ev tmp.Pos set from entity @s Pos",
     "data modify storage schatveld:ev queue append from storage schatveld:ev tmp",
+])
+mcf(f"data/{NS}/function/solo/detect.mcfunction", [
+    "function schatveld:calc_metal",
+    "title @s actionbar {\"translate\":\"schatveld.detector.reading\",\"with\":"
+    "[{\"score\":{\"name\":\"@s\",\"objective\":\"sv_metal\"},\"bold\":true}],\"color\":\"aqua\"}",
 ])
 
 # ---- graven detecteren (tick) → loot per band; <10 altijd roestig ijzer ----
@@ -163,7 +176,21 @@ mcf(f"data/{NS}/function/tick.mcfunction", tick)
 # storage schatveld:ev queue; de Python-brug leest dit via RCON, berekent de vondst
 # (identiek aan de Roblox-kant) en pusht die terug. Zo is Python de enige autoriteit.
 mcf(f"data/{NS}/function/on_dig.mcfunction", [
-    "function schatveld:emit_dig",
+    # solo → de datapack geeft zelf loot (per band, <10 = roestig ijzer); brain-modus → emit
+    "execute if score #solo sv_flags matches 1 run function schatveld:solo/dig",
+    "execute if score #solo sv_flags matches 0 run function schatveld:emit_dig",
+])
+# STANDALONE: geef loot uit de eigen loot-tabellen op basis van de scoreboard-metaalwaarde.
+mcf(f"data/{NS}/function/solo/dig.mcfunction", [
+    "function schatveld:calc_metal",
+    "execute if score @s sv_metal matches ..9 run loot give @s loot schatveld:finds/rusty_iron",
+    "execute if score @s sv_metal matches 10..39 run loot give @s loot schatveld:finds/finds_common",
+    "execute if score @s sv_metal matches 40..69 run loot give @s loot schatveld:finds/finds_mid",
+    "execute if score @s sv_metal matches 70.. run loot give @s loot schatveld:finds/finds_rich",
+    "execute at @s run particle minecraft:block{block_state:{Name:\"minecraft:dirt\"}} ~ ~0.3 ~ 0.3 0.3 0.3 0.1 20",
+    "execute at @s run playsound minecraft:block.gravel.break block @s ~ ~ ~ 1 1",
+    "title @s actionbar {\"translate\":\"schatveld.dig.found_solo\",\"with\":"
+    "[{\"score\":{\"name\":\"@s\",\"objective\":\"sv_metal\"}}],\"color\":\"green\"}",
 ])
 mcf(f"data/{NS}/function/emit_dig.mcfunction", [
     "data modify storage schatveld:ev tmp set value {kind:\"dig\"}",
@@ -224,35 +251,34 @@ mcf(f"data/{NS}/function/interact.mcfunction", [
 def loot(entries, rolls=1):
     return {"type": "minecraft:chest", "random_sequence": f"{NS}:finds",
             "pools": [{"rolls": rolls, "entries": entries}]}
-def item(mc, weight, name, count=(1,1), lore=None):
-    e = {"type": "minecraft:item", "name": mc, "weight": weight,
-         "functions": [{"function":"minecraft:set_count","count":{"min":count[0],"max":count[1]}},
-                       {"function":"minecraft:set_custom_name","name":{"text":name}}]}
-    if lore:
-        e["functions"].append({"function":"minecraft:set_lore","lore":[{"text":lore}]})
-    return e
+def item(mc, weight, key, count=(1,1)):
+    # gelokaliseerde vondstnaam via translate-key (werkt in solo én brain-modus).
+    # 1.21: de loot-functie heet 'minecraft:set_name' met target 'custom_name' (niet set_custom_name).
+    return {"type": "minecraft:item", "name": mc, "weight": weight,
+            "functions": [{"function":"minecraft:set_count","count":{"min":count[0],"max":count[1]}},
+                          {"function":"minecraft:set_name","name":{"translate":key},"target":"custom_name"}]}
 
-# Realistische Land-Wursten-vondsten (vanilla-items als stand-in).
+# Realistische Land-Wursten-vondsten (vanilla-items als stand-in), namen via translate-keys.
 w(f"data/{NS}/loot_table/finds/rusty_iron.json",
-  loot([ item("minecraft:iron_nugget", 1, "Roestig ijzer", (1,3), "roestig agrarisch ijzer") ]))
+  loot([ item("minecraft:iron_nugget", 1, "schatveld.find.rusty_iron", (1,3)) ]))
 w(f"data/{NS}/loot_table/finds/finds_common.json",
-  loot([ item("minecraft:iron_nugget", 40, "Handgesmede spijkers", (2,5)),
-         item("minecraft:iron_ingot", 25, "Ploegijzer (Pflugschar)"),
-         item("minecraft:flint", 40, "Feuerstein-knol", (1,4)),
-         item("minecraft:iron_ingot", 20, "Hoefijzer"),
-         item("minecraft:quartz", 25, "Kwartskei", (1,3)) ]))
+  loot([ item("minecraft:iron_nugget", 40, "schatveld.find.nails", (2,5)),
+         item("minecraft:iron_ingot", 25, "schatveld.find.plough_iron"),
+         item("minecraft:flint", 40, "schatveld.find.flint", (1,4)),
+         item("minecraft:iron_ingot", 20, "schatveld.find.horseshoe"),
+         item("minecraft:quartz", 25, "schatveld.find.quartz", (1,3)) ]))
 w(f"data/{NS}/loot_table/finds/finds_mid.json",
-  loot([ item("minecraft:iron_ingot", 30, "Gereedschapsschroot", (1,2)),
-         item("minecraft:brick", 22, "Aardewerkscherf", (1,3)),
-         item("minecraft:flint", 12, "Hühnergott (gat-vuursteen)", lore="talisman"),
-         item("minecraft:gold_nugget", 14, "Middeleeuwse munt", (1,2)),
-         item("minecraft:iron_ingot", 20, "Ploegijzer") ]))
+  loot([ item("minecraft:iron_ingot", 30, "schatveld.find.tool_scrap", (1,2)),
+         item("minecraft:brick", 22, "schatveld.find.sherd", (1,3)),
+         item("minecraft:flint", 12, "schatveld.find.huhnergott"),
+         item("minecraft:gold_nugget", 14, "schatveld.find.coin_medieval", (1,2)),
+         item("minecraft:iron_ingot", 20, "schatveld.find.plough_iron") ]))
 w(f"data/{NS}/loot_table/finds/finds_rich.json",
-  loot([ item("minecraft:gold_ingot", 8, "Gouden munt", lore="Schatzregal: eigendom Land Bremen"),
-         item("minecraft:amethyst_shard", 6, "Barnsteen (Bernstein)", (1,2)),
-         item("minecraft:copper_ingot", 12, "Fibula (mantelspeld)", lore="Wurt-artefact"),
-         item("minecraft:emerald", 4, "Wurt-artefact (Thron-graf)", lore="Schatzregal"),
-         item("minecraft:gold_nugget", 20, "Munthoard", (2,6)) ]))
+  loot([ item("minecraft:gold_ingot", 8, "schatveld.find.coin_gold"),
+         item("minecraft:amethyst_shard", 6, "schatveld.find.amber", (1,2)),
+         item("minecraft:copper_ingot", 12, "schatveld.find.fibula"),
+         item("minecraft:emerald", 4, "schatveld.find.throne_relic"),
+         item("minecraft:gold_nugget", 20, "schatveld.find.coin_hoard", (2,6)) ]))
 
 # ---------------------------------------------------------------- README in de pack
 w("README.txt",
