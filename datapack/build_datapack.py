@@ -276,9 +276,15 @@ veh_adv("police", "police_car")
 def deploy_fn(kind, key, tag):
     return [
         f"advancement revoke @s only schatveld:deploy_{kind}",
+        # ONZICHTBAAR bestuurbaar paard = de fysica van het voertuig
         "summon minecraft:horse ~ ~ ~ {Tame:1b,SaddleItem:{id:\"minecraft:saddle\",count:1},"
-        f"Tags:[\"sv_new\",\"{tag}\",\"sv_vehicle\"],CustomNameVisible:1b,"
-        f"CustomName:'{{\"translate\":\"schatveld.item.{key}\"}}'}}",
+        "active_effects:[{id:\"minecraft:invisibility\",amplifier:0,duration:-1,show_particles:false}],"
+        f"Tags:[\"sv_new\",\"{tag}\",\"sv_vehicle\"]}}",
+        # het ZICHTBARE 3D-model (item_display) dat het paard volgt → je rijdt de tractor/auto
+        f"summon minecraft:item_display ~ ~ ~ {{Tags:[\"sv_disp_{kind}\"],"
+        f"item:{{id:\"minecraft:stick\",count:1,components:{{\"minecraft:item_model\":\"schatveld:{key}\"}}}},"
+        "transformation:{translation:[0f,-0.1f,0f],left_rotation:[0f,0f,0f,1f],"
+        "scale:[1.7f,1.7f,1.7f],right_rotation:[0f,0f,0f,1f]}}",
         "ride @s mount @e[tag=sv_new,limit=1,sort=nearest,distance=..4]",
         "tag @e[tag=sv_new] remove sv_new",
         f"title @s actionbar {{\"translate\":\"schatveld.vehicle.boarded\","
@@ -287,14 +293,24 @@ def deploy_fn(kind, key, tag):
 mcf(f"data/{NS}/function/vehicle/deploy_tractor.mcfunction", deploy_fn("tractor", "tractor", "sv_tractor"))
 mcf(f"data/{NS}/function/vehicle/deploy_police.mcfunction", deploy_fn("police", "police_car", "sv_police"))
 
-# politieauto van de weg af (boven een veld-blok) → berijder eraf + waarschuwing (elke tick)
-mcf(f"data/{NS}/function/vehicle/police_check.mcfunction", [
+# elke tick: model volgt het paard · afstappen = voertuig weg · politie mag alleen op de weg
+mcf(f"data/{NS}/function/vehicle/tick.mcfunction", [
+    # 3D-model volgt positie + richting van het (onzichtbare) paard
+    "execute as @e[tag=sv_disp_tractor] at @e[tag=sv_tractor,limit=1,sort=nearest] "
+    "rotated as @e[tag=sv_tractor,limit=1,sort=nearest] run tp @s ~ ~ ~ ~ 0",
+    "execute as @e[tag=sv_disp_police] at @e[tag=sv_police,limit=1,sort=nearest] "
+    "rotated as @e[tag=sv_police,limit=1,sort=nearest] run tp @s ~ ~ ~ ~ 0",
+    # afstappen (geen berijder) → voertuig + model verdwijnen (rechtsklik het item om weer te rijden)
+    "execute as @e[tag=sv_vehicle] unless data entity @s Passengers[0] run kill @s",
+    "execute as @e[tag=sv_disp_tractor] unless entity @e[tag=sv_tractor,distance=..4] run kill @s",
+    "execute as @e[tag=sv_disp_police] unless entity @e[tag=sv_police,distance=..4] run kill @s",
+    # politieauto boven een veld-blok → berijder eraf + waarschuwing (alleen op de weg)
     "execute as @e[tag=sv_police] at @s if block ~ ~-1 ~ #schatveld:field on passengers run "
     "title @s actionbar {\"translate\":\"schatveld.vehicle.police_offroad\",\"color\":\"red\"}",
     "execute as @e[tag=sv_police] at @s if block ~ ~-1 ~ #schatveld:field on passengers run ride @s dismount",
 ])
 with open(os.path.join(PACK, f"data/{NS}/function/tick.mcfunction"), "a", encoding="utf-8") as f:
-    f.write("function schatveld:vehicle/police_check\n")
+    f.write("function schatveld:vehicle/tick\n")
 
 # 5-blok-interactie (politie ↔ boer): /function schatveld:interact — alleen binnen 5 blokken
 mcf(f"data/{NS}/function/interact.mcfunction", [
