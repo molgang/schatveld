@@ -72,39 +72,47 @@ def _px(a, x, y, rgb, al=255):
     if 0 <= x < 16 and 0 <= y < 16:
         a[y, x] = (rgb[0], rgb[1], rgb[2], al)
 
-def icon_metal_detector():
-    a = _canvas()
-    grey=(150,152,162); greyD=(112,114,126); dark=(66,68,80)
-    yel=(230,196,74); yelD=(184,152,56); hi=(255,226,150)
-    for x in range(5,11): _px(a,x,1,dark)          # handvat-bar
-    _px(a,7,2,dark); _px(a,8,2,dark)
-    for y in range(2,10):                           # steel
-        _px(a,7,y,grey); _px(a,8,y,greyD)
-    for y in range(4,7):                            # controle-box
-        for x in range(9,12): _px(a,x,y,dark)
-    _px(a,10,5,greyD)
-    cx,cy,rx,ry=7.5,12.0,5.2,2.7                    # zoekspoel (ring)
+def _outline(a, col=(24, 22, 30)):
+    # donkere rand rond alle niet-transparante pixels → leest scherp op 16px
+    out = a.copy()
     for y in range(16):
         for x in range(16):
-            dd=((x-cx)/rx)**2+((y-cy)/ry)**2
-            if 0.5<=dd<=1.0:
-                _px(a,x,y, yel if (x+y)%2 else yelD)
-    _px(a,4,12,hi); _px(a,5,11,hi)                  # glans
-    return a
+            if a[y, x, 3] == 0:
+                for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                    nx, ny = x + dx, y + dy
+                    if 0 <= nx < 16 and 0 <= ny < 16 and a[ny, nx, 3] > 0:
+                        out[y, x] = (col[0], col[1], col[2], 255); break
+    return out
+
+def icon_metal_detector():
+    a = _canvas()
+    grey=(168,172,184); greyD=(122,126,140); box=(72,76,92); screen=(96,224,140)
+    yel=(236,202,84); yelD=(192,160,62); hole=(58,60,72); hi=(255,230,150)
+    cx, cy = 7.5, 12.3                               # zoekspoel = gevulde schijf
+    for y in range(16):
+        for x in range(16):
+            d = (x-cx)**2 + ((y-cy)*1.35)**2
+            if d <= 15: _px(a, x, y, yel if d > 5 else hole)
+    _px(a,4,12,hi); _px(a,5,11,hi)                  # glans op de spoel
+    for y in range(3,11):                           # steel (dik)
+        _px(a,7,y,grey); _px(a,8,y,greyD)
+    for x in range(6,10): _px(a,x,2,box)            # handvat
+    for y in range(4,8):                            # controle-box
+        for x in range(9,13): _px(a,x,y,box)
+    _px(a,10,5,screen); _px(a,11,5,screen)          # groen schermpje
+    return _outline(a)
 
 def icon_shovel():
-    a=_canvas()
-    brown=(150,110,60); brownD=(112,82,46); grey=(160,162,172); greyD=(120,122,134); hi=(212,216,226)
+    a = _canvas()
+    brown=(164,120,66); brownD=(122,90,50); steel=(176,180,192); steelD=(124,128,142); hi=(220,224,234)
     for x in range(6,10): _px(a,x,1,brownD)         # D-grip
-    _px(a,6,2,brownD); _px(a,9,2,brownD)
-    for y in range(2,9):                            # steel
+    for y in range(2,9):                            # steel (dik)
         _px(a,7,y,brown); _px(a,8,y,brownD)
-    for x in range(6,10): _px(a,x,9,greyD)          # bus
-    for (x0,x1,y) in [(5,10,10),(4,11,11),(4,11,12),(5,10,13),(6,9,14)]:  # spade-blad
-        for x in range(x0,x1+1): _px(a,x,y,grey)
-        _px(a,x0,y,greyD); _px(a,x1,y,greyD)
-    _px(a,6,11,hi); _px(a,6,12,hi)                  # glans
-    return a
+    for (x0,x1,y) in [(5,10,9),(4,11,10),(4,11,11),(4,11,12),(5,10,13),(6,9,14)]:  # spade-blad
+        for x in range(x0,x1+1): _px(a,x,y,steel)
+        _px(a,x0,y,steelD); _px(a,x1,y,steelD)
+    _px(a,6,10,hi); _px(a,6,11,hi)                  # glans
+    return _outline(a)
 
 FLAT_ICONS = {"metal_detector": icon_metal_detector, "shovel": icon_shovel}
 

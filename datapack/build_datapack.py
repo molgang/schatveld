@@ -70,6 +70,9 @@ mcf(f"data/{NS}/function/load.mcfunction", [
     "# De Python-brug zet #solo op 0 zodra die verbindt → dan is de brain de autoriteit.",
     "scoreboard objectives add sv_flags dummy",
     "scoreboard players set #solo sv_flags 1",
+    "# detector-HUD: bossbar bovenaan het scherm (0..100 meter, kleurt koud→heet)",
+    "bossbar add schatveld:det {\"translate\":\"schatveld.item.detector\",\"color\":\"aqua\"}",
+    "bossbar set schatveld:det max 100",
     "# event-queue init (one brain: Python leest hier de dig/scan-events)",
     "data modify storage schatveld:ev queue set value []",
     "tellraw @a {\"translate\":\"schatveld.loaded\",\"color\":\"gold\"}",
@@ -117,6 +120,19 @@ mcf(f"data/{NS}/function/on_join.mcfunction", [
     "execute if score #solo sv_flags matches 1 if score #marsh sv_flags matches 0 run tp @s ~ ~1 ~",
     "execute if score #solo sv_flags matches 1 run scoreboard players set #marsh sv_flags 1",
     "tellraw @s {\"translate\":\"schatveld.loaded\",\"color\":\"gold\"}",
+])
+
+# ---- kit: geef ALLE Schatveld-items in één keer (datapacks kunnen geen eigen creative-tab
+#      maken; zo krijg je toch snel alles). Gebruik: /function schatveld:kit ----
+mcf(f"data/{NS}/function/kit.mcfunction", [
+    "function schatveld:shop/give_detector",
+    "give @s wooden_shovel[item_name={\"translate\":\"schatveld.item.shovel\"},"
+    "item_model=\"schatveld:shovel\",custom_data={sv_shovel:1b}]",
+    "give @s minecraft:stick[item_model=\"schatveld:tractor\","
+    "item_name={\"translate\":\"schatveld.item.tractor\"},custom_data={sv_vehicle:\"tractor\"}]",
+    "give @s minecraft:stick[item_model=\"schatveld:police_car\","
+    "item_name={\"translate\":\"schatveld.item.police_car\"},custom_data={sv_vehicle:\"police_car\"}]",
+    "tellraw @s {\"text\":\"Kit: detector, shovel, tractor, police car.\",\"color\":\"green\"}",
 ])
 
 # ---- winkel: geef de metaaldetector (carrot_on_a_stick + custom_data + 3D-model) ----
@@ -181,17 +197,29 @@ mcf(f"data/{NS}/function/build_marsh.mcfunction", _marsh)
 #      voor een carrot_on_a_stick. Loop rond → het getal 0..100 verandert live. ----
 mcf(f"data/{NS}/function/detector_readout.mcfunction", [
     "function schatveld:calc_metal",
+    # bossbar-meter (0..100) vullen + kleuren naar band: koud(blauw)→heet(rood)
+    "execute store result bossbar schatveld:det value run scoreboard players get @s sv_metal",
+    "execute if score @s sv_metal matches ..9 run bossbar set schatveld:det color blue",
+    "execute if score @s sv_metal matches 10..39 run bossbar set schatveld:det color green",
+    "execute if score @s sv_metal matches 40..69 run bossbar set schatveld:det color yellow",
+    "execute if score @s sv_metal matches 70.. run bossbar set schatveld:det color red",
+    # exact getal in de actionbar (net onder de meter)
     "title @s actionbar [\"\",{\"translate\":\"schatveld.detector.reading\",\"with\":"
     "[{\"score\":{\"name\":\"@s\",\"objective\":\"sv_metal\"},\"bold\":true}],\"color\":\"aqua\"}]",
 ])
 
+# selector: speler die de detector in de hand houdt
+HOLD = "@a[nbt={SelectedItem:{components:{\"minecraft:custom_data\":{sv_detector:1b}}}}]"
+
 # ---- graven detecteren (tick) → loot per band; <10 altijd roestig ijzer ----
 DIG_OBJS = ["dig_dirt","dig_grass","dig_coarse","dig_mud","dig_clay","dig_gravel","dig_sand","dig_farm","dig_podzol"]
 tick = []
-# continue detector-uitlezing voor iedereen die de detector in de hand heeft
-tick.append("execute as @a at @s if data entity @s "
-            "{SelectedItem:{components:{\"minecraft:custom_data\":{sv_detector:1b}}}} "
-            "run function schatveld:detector_readout")
+# detector-HUD (bossbar): audience = houders; verbergen als niemand 'm vasthoudt
+tick.append(f"execute if entity {HOLD} run bossbar set schatveld:det players {HOLD}")
+tick.append(f"execute if entity {HOLD} run bossbar set schatveld:det visible true")
+tick.append(f"execute unless entity {HOLD} run bossbar set schatveld:det visible false")
+# continue uitlezing (meter + actionbar) per houder
+tick.append(f"execute as {HOLD} at @s run function schatveld:detector_readout")
 for o in DIG_OBJS:
     tick.append(f"execute as @a[scores={{{o}=1..}}] run function schatveld:on_dig")
     tick.append(f"scoreboard players set @a {o} 0")
