@@ -33,9 +33,10 @@ def mcf(path, lines):
 w("pack.mcmeta", {
     "pack": {
         "description": "Schatveld Weddewarden — schatgraven in het Land-Wursten marschveld",
-        # 1.21.10 datapack-formaat = 88; 1.21.9+ vereist min_format/max_format ipv supported_formats
+        # 1.21.10 data-formaat = 88. Nodig: min_format + max_format, met min BOVEN de 81-drempel
+        # (min 48 werd door de game als 'format 48' gelezen → 17-81-val → afgekeurd).
         "pack_format": 88,
-        "min_format": 48,
+        "min_format": 82,
         "max_format": 88,
     }
 })
@@ -109,11 +110,12 @@ mcf(f"data/{NS}/function/on_join.mcfunction", [
     "function schatveld:shop/give_detector",
     "give @s wooden_shovel[item_name={\"translate\":\"schatveld.item.shovel\"},"
     "item_model=\"schatveld:shovel\",custom_data={sv_shovel:1b}]",
-    # bouw het marschland ÉÉN keer rond de speler (chunks geladen → werkt offline)
+    # marschland alleen in SOLO (singleplayer) rond de speler bouwen; op de server
+    # bestaat het al absoluut bij (0,63,0), dus daar niet nog eens.
     "scoreboard players add #marsh sv_flags 0",
-    "execute if score #marsh sv_flags matches 0 at @s run function schatveld:build_marsh",
-    "execute if score #marsh sv_flags matches 0 run tp @s ~ ~1 ~",
-    "scoreboard players set #marsh sv_flags 1",
+    "execute if score #solo sv_flags matches 1 if score #marsh sv_flags matches 0 at @s run function schatveld:build_marsh",
+    "execute if score #solo sv_flags matches 1 if score #marsh sv_flags matches 0 run tp @s ~ ~1 ~",
+    "execute if score #solo sv_flags matches 1 run scoreboard players set #marsh sv_flags 1",
     "tellraw @s {\"translate\":\"schatveld.loaded\",\"color\":\"gold\"}",
 ])
 
@@ -174,39 +176,27 @@ for (x, y, z, key) in _points:
     _marsh.append(f"setblock ~{x-24} ~{y-64} ~{z-18} {marsh_spec.BLOCKS[key][0]}")
 mcf(f"data/{NS}/function/build_marsh.mcfunction", _marsh)
 
-# ---- detector gebruikt op blok → meld de waarde ----
-w(f"data/{NS}/advancement/use_detector.json", {
-    "criteria": {"use": {"trigger": "minecraft:item_used_on_block", "conditions": {
-        # partial match via predicates (SNBT) — robuust voor byte-waarde 1b
-        "item": {"predicates": {"minecraft:custom_data": "{sv_detector:1b}"}}
-    }}},
-    "rewards": {"function": f"{NS}:on_detect"}
-})
-mcf(f"data/{NS}/function/on_detect.mcfunction", [
-    "advancement revoke @s only schatveld:use_detector",
-    # solo → datapack toont zelf de waarde; brain-modus → emit een scan-event
-    "execute if score #solo sv_flags matches 1 run function schatveld:solo/detect",
-    "execute if score #solo sv_flags matches 0 run function schatveld:emit_scan",
-])
-mcf(f"data/{NS}/function/emit_scan.mcfunction", [
-    "data modify storage schatveld:ev tmp set value {kind:\"scan\"}",
-    "data modify storage schatveld:ev tmp.Pos set from entity @s Pos",
-    "data modify storage schatveld:ev queue append from storage schatveld:ev tmp",
-])
-mcf(f"data/{NS}/function/solo/detect.mcfunction", [
+# ---- detector: TOON de metaalwaarde CONTINU terwijl je 'm vasthoudt (elke tick).
+#      Geen rechtsklik nodig — de item_used_on_block-advancement vuurt niet betrouwbaar
+#      voor een carrot_on_a_stick. Loop rond → het getal 0..100 verandert live. ----
+mcf(f"data/{NS}/function/detector_readout.mcfunction", [
     "function schatveld:calc_metal",
-    "title @s actionbar {\"translate\":\"schatveld.detector.reading\",\"with\":"
-    "[{\"score\":{\"name\":\"@s\",\"objective\":\"sv_metal\"},\"bold\":true}],\"color\":\"aqua\"}",
+    "title @s actionbar [\"\",{\"translate\":\"schatveld.detector.reading\",\"with\":"
+    "[{\"score\":{\"name\":\"@s\",\"objective\":\"sv_metal\"},\"bold\":true}],\"color\":\"aqua\"}]",
 ])
 
 # ---- graven detecteren (tick) → loot per band; <10 altijd roestig ijzer ----
 DIG_OBJS = ["dig_dirt","dig_grass","dig_coarse","dig_mud","dig_clay","dig_gravel","dig_sand","dig_farm","dig_podzol"]
 tick = []
+# continue detector-uitlezing voor iedereen die de detector in de hand heeft
+tick.append("execute as @a at @s if data entity @s "
+            "{SelectedItem:{components:{\"minecraft:custom_data\":{sv_detector:1b}}}} "
+            "run function schatveld:detector_readout")
 for o in DIG_OBJS:
     tick.append(f"execute as @a[scores={{{o}=1..}}] run function schatveld:on_dig")
     tick.append(f"scoreboard players set @a {o} 0")
-# standalone: nieuwe speler bij de eerste join automatisch uitrusten (geen cheats nodig)
-tick.insert(0, "execute if score #solo sv_flags matches 1 as @a[tag=!sv_started] run function schatveld:on_join")
+# nieuwe speler bij join automatisch uitrusten — nu in BEIDE modi (detector werkt meteen)
+tick.insert(0, "execute as @a[tag=!sv_started] run function schatveld:on_join")
 mcf(f"data/{NS}/function/tick.mcfunction", tick)
 
 # ONE BRAIN: de datapack GEEFT geen loot meer zelf — hij EMIT het dig-event naar
