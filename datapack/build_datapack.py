@@ -231,11 +231,11 @@ mcf(f"data/{NS}/function/tick.mcfunction", tick)
 # storage schatveld:ev queue; de Python-brug leest dit via RCON, berekent de vondst
 # (identiek aan de Roblox-kant) en pusht die terug. Zo is Python de enige autoriteit.
 mcf(f"data/{NS}/function/on_dig.mcfunction", [
-    # solo → de datapack geeft zelf loot (per band, <10 = roestig ijzer); brain-modus → emit
-    "execute if score #solo sv_flags matches 1 run function schatveld:solo/dig",
-    "execute if score #solo sv_flags matches 0 run function schatveld:emit_dig",
+    # De beloning wordt bepaald door de detectorwaarde (calc_metal) OP DEZE PLEK — de datapack
+    # geeft 'm zelf, zodat het detector-getal en de beloning ALTIJD overeenkomen (beide modi).
+    "function schatveld:solo/dig",
 ])
-# STANDALONE: geef loot uit de eigen loot-tabellen op basis van de scoreboard-metaalwaarde.
+# Beloning per metaal-band: laag → ijzer-nugget, gemiddeld → ijzeren staaf, hoog → GOUD met geluk.
 mcf(f"data/{NS}/function/solo/dig.mcfunction", [
     "function schatveld:calc_metal",
     "execute if score @s sv_metal matches ..9 run loot give @s loot schatveld:finds/rusty_iron",
@@ -244,6 +244,8 @@ mcf(f"data/{NS}/function/solo/dig.mcfunction", [
     "execute if score @s sv_metal matches 70.. run loot give @s loot schatveld:finds/finds_rich",
     "execute at @s run particle minecraft:block{block_state:{Name:\"minecraft:dirt\"}} ~ ~0.3 ~ 0.3 0.3 0.3 0.1 20",
     "execute at @s run playsound minecraft:block.gravel.break block @s ~ ~ ~ 1 1",
+    # hoge waarde = 'jackpot'-klank
+    "execute at @s if score @s sv_metal matches 70.. run playsound minecraft:entity.player.levelup block @s ~ ~ ~ 1 1.4",
     "title @s actionbar {\"translate\":\"schatveld.dig.found_solo\",\"with\":"
     "[{\"score\":{\"name\":\"@s\",\"objective\":\"sv_metal\"}}],\"color\":\"green\"}",
 ])
@@ -313,27 +315,25 @@ def item(mc, weight, key, count=(1,1)):
             "functions": [{"function":"minecraft:set_count","count":{"min":count[0],"max":count[1]}},
                           {"function":"minecraft:set_name","name":{"translate":key},"target":"custom_name"}]}
 
-# Realistische Land-Wursten-vondsten (vanilla-items als stand-in), namen via translate-keys.
-w(f"data/{NS}/loot_table/finds/rusty_iron.json",
-  loot([ item("minecraft:iron_nugget", 1, "schatveld.find.rusty_iron", (1,3)) ]))
-w(f"data/{NS}/loot_table/finds/finds_common.json",
-  loot([ item("minecraft:iron_nugget", 40, "schatveld.find.nails", (2,5)),
-         item("minecraft:iron_ingot", 25, "schatveld.find.plough_iron"),
-         item("minecraft:flint", 40, "schatveld.find.flint", (1,4)),
-         item("minecraft:iron_ingot", 20, "schatveld.find.horseshoe"),
-         item("minecraft:quartz", 25, "schatveld.find.quartz", (1,3)) ]))
-w(f"data/{NS}/loot_table/finds/finds_mid.json",
-  loot([ item("minecraft:iron_ingot", 30, "schatveld.find.tool_scrap", (1,2)),
-         item("minecraft:brick", 22, "schatveld.find.sherd", (1,3)),
-         item("minecraft:flint", 12, "schatveld.find.huhnergott"),
-         item("minecraft:gold_nugget", 14, "schatveld.find.coin_medieval", (1,2)),
-         item("minecraft:iron_ingot", 20, "schatveld.find.plough_iron") ]))
-w(f"data/{NS}/loot_table/finds/finds_rich.json",
-  loot([ item("minecraft:gold_ingot", 8, "schatveld.find.coin_gold"),
-         item("minecraft:amethyst_shard", 6, "schatveld.find.amber", (1,2)),
-         item("minecraft:copper_ingot", 12, "schatveld.find.fibula"),
-         item("minecraft:emerald", 4, "schatveld.find.throne_relic"),
-         item("minecraft:gold_nugget", 20, "schatveld.find.coin_hoard", (2,6)) ]))
+# Beloning geschaald met de detectorwaarde: LAAG → ijzer-nugget, GEMIDDELD → ijzeren staaf,
+# HOOG → meestal een staaf maar met GELUK goud (+ wat thematische bonusvondsten).
+w(f"data/{NS}/loot_table/finds/rusty_iron.json",   # band <10: altijd roestig ijzer (nugget)
+  loot([ item("minecraft:iron_nugget", 1, "schatveld.find.rusty_iron", (1,2)) ]))
+w(f"data/{NS}/loot_table/finds/finds_common.json",  # band 10-39: laag → vooral nuggets
+  loot([ item("minecraft:iron_nugget", 65, "schatveld.find.nails", (1,3)),
+         item("minecraft:iron_ingot", 22, "schatveld.find.plough_iron"),
+         item("minecraft:flint", 13, "schatveld.find.flint", (1,2)) ]))
+w(f"data/{NS}/loot_table/finds/finds_mid.json",     # band 40-69: GEMIDDELD → ijzeren staaf
+  loot([ item("minecraft:iron_ingot", 60, "schatveld.find.plough_iron"),
+         item("minecraft:iron_nugget", 22, "schatveld.find.nails", (1,3)),
+         item("minecraft:gold_nugget", 12, "schatveld.find.coin_medieval"),
+         item("minecraft:brick", 6, "schatveld.find.sherd") ]))
+w(f"data/{NS}/loot_table/finds/finds_rich.json",    # band 70+: HOOG → staaf gemiddeld, GOUD met geluk
+  loot([ item("minecraft:iron_ingot", 46, "schatveld.find.plough_iron"),
+         item("minecraft:gold_nugget", 30, "schatveld.find.coin_medieval", (1,2)),
+         item("minecraft:gold_ingot", 13, "schatveld.find.coin_gold"),
+         item("minecraft:amethyst_shard", 6, "schatveld.find.amber"),
+         item("minecraft:iron_nugget", 5, "schatveld.find.nails") ]))
 
 # ---------------------------------------------------------------- README in de pack
 w("README.txt",
