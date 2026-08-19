@@ -13,10 +13,13 @@ BLOCKS = {
     "grass":    ("minecraft:grass_block", (94, 140, 74)),
     "deich":    ("minecraft:grass_block", (78, 128, 66)),
     "farmland": ("minecraft:farmland",    (96, 72, 50)),
-    "wheat":    ("minecraft:hay_block",   (206, 182, 78)),   # rijp graan (render)
-    "potato":   ("minecraft:rooted_dirt", (92, 128, 70)),    # aardappel-akker
-    "beet":     ("minecraft:red_mushroom_block", (150, 96, 92)),
-    "clover":   ("minecraft:moss_block",  (74, 132, 92)),
+    # akker-STATEN (realistische patchwork van boerenvelden in verschillende stadia):
+    "grain":     ("minecraft:hay_block",    (212, 186, 82)),  # rijp geel graan
+    "grain_stub":("minecraft:packed_mud",   (170, 144, 98)),  # geoogst graan-stoppelveld
+    "maize":     ("minecraft:moss_block",   (74, 150, 58)),   # mais (2 blokken hoog)
+    "maize_stub":("minecraft:coarse_dirt",  (120, 100, 66)),  # geploegde mais-stoppel
+    "ploughed":  ("minecraft:podzol",       (66, 48, 32)),    # vers zwart-geploegd
+    "pasture":   ("minecraft:grass_block",  (96, 152, 72)),   # groen grasland/weide
     "path":     ("minecraft:dirt_path",   (132, 116, 82)),
     "planks":   ("minecraft:oak_planks",  (164, 132, 86)),
     "log":      ("minecraft:oak_log",     (110, 88, 58)),
@@ -62,16 +65,23 @@ def build():
             points.append((cx, fy + 1, cz, "log"))             # hoekbalken
     points.append((fx + 2, fy + 1, fz, "path"))                # deur
 
-    # 6) gewas-Flurstücke: percelen tussen de Gräben, per strook een gewas
-    crops = ["wheat", "potato", "beet", "clover"]
+    # 6) gewas-Flurstücke: realistische patchwork van veld-STATEN met hoogteverschil —
+    #    mais (2 hoog), rijp graan (verhoogd), grasland/geploegd/stoppel (vlak).
+    states = ["grain", "ploughed", "pasture", "maize", "grain_stub", "maize_stub"]
     strips = [(5, 11), (13, 19), (21, 27), (29, 35), (37, 43)]
+    k = 0
     for i, (x0, x1) in enumerate(strips):
         for seg, (z0, z1) in enumerate([(0, 20), (22, D - 1)]):
             if x0 <= 15 and z0 >= 22:        # sla de Wurt-zone over
                 continue
-            crop = crops[(i + seg) % len(crops)]
-            box(x0, z0, x1, z1, BASE, BASE, "farmland")
-            box(x0, z0, x1, z1, BASE + 1, BASE + 1, crop)      # gewaslaag
+            st = states[k % len(states)]; k += 1
+            box(x0, z0, x1, z1, BASE, BASE, "farmland")            # geploegde ondergrond
+            if st == "grain":
+                box(x0, z0, x1, z1, BASE + 1, BASE + 1, "grain")   # rijp graan (+1)
+            elif st == "maize":
+                box(x0, z0, x1, z1, BASE + 1, BASE + 2, "maize")   # mais (2 hoog)
+            else:                                                   # vlak oppervlak-stadium
+                box(x0, z0, x1, z1, BASE, BASE, st)                # pasture/ploughed/stoppel
     # 7) een pad langs de Deich
     box(5, 0, 5, D - 1, BASE, BASE, "path")
 
