@@ -97,6 +97,17 @@ for role, code, item in (("archeoloog", 2, None), ("boer", 1, None), ("politie",
                      "item_name={\"translate\":\"schatveld.item.police_car\"},custom_data={sv_vehicle:\"police_car\"}]")
     mcf(f"data/{NS}/function/role/{role}.mcfunction", lines)
 
+# ---- STANDALONE onboarding: geef bij de eerste keer joinen automatisch de detector +
+#      schep (draait op datapack-niveau, dus GEEN cheats nodig in singleplayer). Alleen in
+#      solo-modus; op de server (brain) blijft de rolkeuze via het menu. ----
+mcf(f"data/{NS}/function/on_join.mcfunction", [
+    "tag @s add sv_started",
+    "function schatveld:shop/give_detector",
+    "give @s wooden_shovel[item_name={\"translate\":\"schatveld.item.shovel\"},"
+    "item_model=\"schatveld:shovel\",custom_data={sv_shovel:1b}]",
+    "tellraw @s {\"translate\":\"schatveld.loaded\",\"color\":\"gold\"}",
+])
+
 # ---- winkel: geef de metaaldetector (carrot_on_a_stick + custom_data + 3D-model) ----
 mcf(f"data/{NS}/function/shop/give_detector.mcfunction", [
     "give @s carrot_on_a_stick[item_name={\"translate\":\"schatveld.item.detector\",\"color\":\"aqua\"},"
@@ -170,6 +181,8 @@ tick = []
 for o in DIG_OBJS:
     tick.append(f"execute as @a[scores={{{o}=1..}}] run function schatveld:on_dig")
     tick.append(f"scoreboard players set @a {o} 0")
+# standalone: nieuwe speler bij de eerste join automatisch uitrusten (geen cheats nodig)
+tick.insert(0, "execute if score #solo sv_flags matches 1 as @a[tag=!sv_started] run function schatveld:on_join")
 mcf(f"data/{NS}/function/tick.mcfunction", tick)
 
 # ONE BRAIN: de datapack GEEFT geen loot meer zelf — hij EMIT het dig-event naar
