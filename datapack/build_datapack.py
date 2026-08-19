@@ -31,8 +31,10 @@ def mcf(path, lines):
 w("pack.mcmeta", {
     "pack": {
         "description": "Schatveld Weddewarden — schatgraven in het Land-Wursten marschveld",
-        "pack_format": 61,
-        "supported_formats": {"min_inclusive": 48, "max_inclusive": 99},
+        # 1.21.10 datapack-formaat = 88; 1.21.9+ vereist min_format/max_format ipv supported_formats
+        "pack_format": 88,
+        "min_format": 48,
+        "max_format": 88,
     }
 })
 

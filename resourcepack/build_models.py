@@ -21,20 +21,11 @@ PALETTE = {
     "red":   (200, 60, 60),   "steel": (120, 124, 136),
 }
 
-# elk model = lijst (from[x,y,z], to[x,y,z], kleur)  — 0..16 item-ruimte, y omhoog
+# De metaaldetector + schep zijn 2D pixel-art ICONEN (zie FLAT_ICONS) — een 3D-model
+# ziet er in het kleine inventory-slot uit als 'een paar blokjes'. Tractor + politieauto
+# blijven 3D (voertuig-items).
+# elk 3D-model = lijst (from[x,y,z], to[x,y,z], kleur)  — 0..16 item-ruimte, y omhoog
 MODELS = {
-    "metal_detector": [
-        ((7, 3, 7), (9, 14, 9), "steel"),       # steel
-        ((4, 13, 7), (12, 15, 9), "dark"),      # handvat
-        ((7, 2, 7), (9, 4, 11), "steel"),       # nek naar de spoel
-        ((3, 1, 3), (13, 2, 13), "yellow"),     # zoekspoel (schijf)
-        ((6, 1, 6), (10, 2, 10), "dark"),       # spoel-midden
-    ],
-    "shovel": [
-        ((7, 5, 7), (9, 15, 9), "brown"),       # steel
-        ((7, 4, 7), (9, 6, 9), "steel"),        # bus
-        ((5, 1, 7), (11, 5, 9), "steel"),       # blad
-    ],
     "tractor": [
         ((3, 4, 3), (12, 8, 13), "green"),      # motorblok/chassis
         ((9, 4, 4), (14, 7, 12), "green"),      # neus
@@ -73,6 +64,51 @@ def solid_png(rgb):
     b = io.BytesIO(); Image.fromarray(a, "RGBA").save(b, "PNG"); return b.getvalue()
 
 
+# ---- 2D pixel-art iconen (metaaldetector + schep) — nette inventory-sprite ----
+def _canvas():
+    return np.zeros((16, 16, 4), np.uint8)
+
+def _px(a, x, y, rgb, al=255):
+    if 0 <= x < 16 and 0 <= y < 16:
+        a[y, x] = (rgb[0], rgb[1], rgb[2], al)
+
+def icon_metal_detector():
+    a = _canvas()
+    grey=(150,152,162); greyD=(112,114,126); dark=(66,68,80)
+    yel=(230,196,74); yelD=(184,152,56); hi=(255,226,150)
+    for x in range(5,11): _px(a,x,1,dark)          # handvat-bar
+    _px(a,7,2,dark); _px(a,8,2,dark)
+    for y in range(2,10):                           # steel
+        _px(a,7,y,grey); _px(a,8,y,greyD)
+    for y in range(4,7):                            # controle-box
+        for x in range(9,12): _px(a,x,y,dark)
+    _px(a,10,5,greyD)
+    cx,cy,rx,ry=7.5,12.0,5.2,2.7                    # zoekspoel (ring)
+    for y in range(16):
+        for x in range(16):
+            dd=((x-cx)/rx)**2+((y-cy)/ry)**2
+            if 0.5<=dd<=1.0:
+                _px(a,x,y, yel if (x+y)%2 else yelD)
+    _px(a,4,12,hi); _px(a,5,11,hi)                  # glans
+    return a
+
+def icon_shovel():
+    a=_canvas()
+    brown=(150,110,60); brownD=(112,82,46); grey=(160,162,172); greyD=(120,122,134); hi=(212,216,226)
+    for x in range(6,10): _px(a,x,1,brownD)         # D-grip
+    _px(a,6,2,brownD); _px(a,9,2,brownD)
+    for y in range(2,9):                            # steel
+        _px(a,7,y,brown); _px(a,8,y,brownD)
+    for x in range(6,10): _px(a,x,9,greyD)          # bus
+    for (x0,x1,y) in [(5,10,10),(4,11,11),(4,11,12),(5,10,13),(6,9,14)]:  # spade-blad
+        for x in range(x0,x1+1): _px(a,x,y,grey)
+        _px(a,x0,y,greyD); _px(a,x1,y,greyD)
+    _px(a,6,11,hi); _px(a,6,12,hi)                  # glans
+    return a
+
+FLAT_ICONS = {"metal_detector": icon_metal_detector, "shovel": icon_shovel}
+
+
 def model_json(boxes):
     cols = sorted({c for _, _, c in boxes})
     textures = {c: f"schatveld:item/col_{c}" for c in cols}
@@ -99,9 +135,11 @@ def voxelize(boxes, N=16):
 
 def render_preview(out):
     TW, TH, CH = 6, 3, 4
-    names = list(MODELS)
-    cellw = 210
-    W, H = cellw * len(names), 250
+    flat = list(FLAT_ICONS)
+    solid = list(MODELS)
+    names = flat + solid
+    cellw = 200
+    W, H = cellw * len(names), 260
     img = Image.new("RGB", (W, H), (22, 26, 34)); d = ImageDraw.Draw(img, "RGBA")
     def fnt(s):
         for p in ("/System/Library/Fonts/Supplemental/Arial Bold.ttf", "/System/Library/Fonts/Helvetica.ttc"):
@@ -110,19 +148,21 @@ def render_preview(out):
         return ImageFont.load_default()
     def shade(c, fr): return tuple(max(0, min(255, int(v * fr))) for v in c)
     for i, name in enumerate(names):
-        grid = voxelize(MODELS[name])
-        ox = i * cellw + cellw // 2
-        oy = 150
-        for (x, y, z) in sorted(grid, key=lambda k: (k[0] + k[2], k[1], k[0] + k[2])):
-            rgb = grid[(x, y, z)]
-            cx = ox + (x - z) * TW
-            cy = oy + (x + z) * TH - y * CH
-            d.polygon([(cx - TW, cy), (cx, cy + TH), (cx, cy + TH + CH), (cx - TW, cy + CH)], fill=shade(rgb, .72))
-            d.polygon([(cx + TW, cy), (cx, cy + TH), (cx, cy + TH + CH), (cx + TW, cy + CH)], fill=shade(rgb, .52))
-            d.polygon([(cx, cy - TH), (cx + TW, cy), (cx, cy + TH), (cx - TW, cy)], fill=rgb)
-        d.text((i * cellw + 16, 214), name, font=fnt(15), fill=(226, 214, 120))
-    d.text((14, 12), "Schatveld — 3D item-modellen (metaaldetector · schep · tractor · politieauto)",
-           font=fnt(15), fill=(150, 220, 255))
+        if name in FLAT_ICONS:                       # 2D icoon: 9× vergroot (zoals inventory)
+            sprite = Image.fromarray(FLAT_ICONS[name](), "RGBA").resize((144, 144), Image.NEAREST)
+            img.paste(sprite, (i * cellw + (cellw - 144) // 2, 60), sprite)
+        else:                                        # 3D-model: iso-voxel
+            grid = voxelize(MODELS[name]); ox = i * cellw + cellw // 2; oy = 150
+            for (x, y, z) in sorted(grid, key=lambda k: (k[0] + k[2], k[1], k[0] + k[2])):
+                rgb = grid[(x, y, z)]
+                cx = ox + (x - z) * TW; cy = oy + (x + z) * TH - y * CH
+                d.polygon([(cx - TW, cy), (cx, cy + TH), (cx, cy + TH + CH), (cx - TW, cy + CH)], fill=shade(rgb, .72))
+                d.polygon([(cx + TW, cy), (cx, cy + TH), (cx, cy + TH + CH), (cx + TW, cy + CH)], fill=shade(rgb, .52))
+                d.polygon([(cx, cy - TH), (cx + TW, cy), (cx, cy + TH), (cx - TW, cy)], fill=rgb)
+        tag = "2D-icoon" if name in FLAT_ICONS else "3D-model"
+        d.text((i * cellw + 14, 224), f"{name}  ({tag})", font=fnt(13), fill=(226, 214, 120))
+    d.text((14, 12), "Schatveld — item-iconen: metaaldetector + schep = 2D pixel-sprite, "
+           "tractor + politieauto = 3D", font=fnt(14), fill=(150, 220, 255))
     img.save(out); print("preview ->", out, f"({W}x{H})")
 
 
@@ -138,7 +178,17 @@ def write_all():
         json.dump(model_json(boxes), open(os.path.join(mdl, f"{name}.json"), "w"), indent=2)
         json.dump({"model": {"type": "minecraft:model", "model": f"schatveld:item/{name}"}},
                   open(os.path.join(itm, f"{name}.json"), "w"), indent=2)
-    print(f"modellen -> {base}  ({len(MODELS)} modellen, {len(PALETTE)} kleur-texturen)")
+    # 2D pixel-art iconen: texture + item/generated-model + items-entry
+    for name, fn in FLAT_ICONS.items():
+        b = io.BytesIO(); Image.fromarray(fn(), "RGBA").save(b, "PNG")
+        open(os.path.join(tex, f"{name}.png"), "wb").write(b.getvalue())
+        json.dump({"parent": "minecraft:item/generated",
+                   "textures": {"layer0": f"schatveld:item/{name}"}},
+                  open(os.path.join(mdl, f"{name}.json"), "w"), indent=2)
+        json.dump({"model": {"type": "minecraft:model", "model": f"schatveld:item/{name}"}},
+                  open(os.path.join(itm, f"{name}.json"), "w"), indent=2)
+    print(f"assets -> {base}  ({len(MODELS)} 3D-modellen, {len(FLAT_ICONS)} 2D-iconen, "
+          f"{len(PALETTE)} kleur-texturen)")
     return base
 
 
