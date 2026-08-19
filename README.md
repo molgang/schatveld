@@ -71,6 +71,33 @@ python3 pybrain/build_marsh.py               # bouwt de marsch LIVE op de server
 python3 data/render_marsh_iso.py             # -> data/schatveld_marsh_iso.png (demonstratie)
 ```
 
+## v2.1 — gameplay & UX (uit een 7-agent-studie)
+
+Een audit van de gameplay wees één cluster met de hoogste hefboom aan — "de eerste 60
+seconden werkt écht en voelt als een metaaldetector" — plus een paar echte bugs. Doorgevoerd,
+gespiegeld over **beide werelden** (Python-brain + Luau) met guard-tests (`pytest` 11/11):
+
+- **Geen start-softlock meer**: een Archeoloog krijgt gratis **schep + metaaldetector** en
+  €300, zodat de vergunning meteen te betalen is en legaal graven vanaf seconde 1 kan.
+- **Detector voelt echt**: de metaalwaarde wordt nu **client-side** berekend (geen server-
+  round-trip per frame meer) met een **nabijheidsmeter** + **ping** die sneller/hoger wordt
+  bij metaal — plus een **vondst-kaart**, **deeltjes** en **geluid** bij het graven.
+- **Vergunning heeft echte ROI**: een illegale (Raubgrabung) significante vondst wordt
+  **beschlagnahmt** (10% i.p.v. 35% vindersloon); zeldzamer betaalt nu **altijd meer**
+  (uitbetalingsvloer, geen inversie meer).
+- **Landesmuseum**: eerste keer dat je een vondst-soort vindt = **Erstfund-bonus** (n/13);
+  reputatie krijgt een zichtbare **rang** (Sondengänger → Landesarchäologe).
+- **Politie-bug gefixt**: de agent klikt nu op een **blok** en de server zoekt de échte
+  overtreder die daar illegaal groef/spoot (voorheen beboette je jezelf).
+- **Doel-banner + duidelijke winkel**: een persistent rol-doel vervangt de verdwijnende
+  toast; de winkel toont vaste volgorde, bezit/betaalbaarheid en de "legaal graven"-eis.
+
+### Puur-Minecraft controlecentrum
+`schatveld_modrinth.ipynb` (gegenereerd door `pybrain/build_modrinth_notebook.py`) is een
+**pure Modrinth-Minecraft**-notebook (geen Roblox): welke assets/mods je gebruikt, de packs
+genereren, de wereld live bouwen, en verbinden. Eén-commando-start: `bash pybrain/play.sh`
+(server + brain + brug), stoppen met `bash pybrain/stop.sh`.
+
 ### Zelf draaien (Python + Minecraft)
 ```
 python3 pybrain/api.py &                 # de brain-API (poort 8791)

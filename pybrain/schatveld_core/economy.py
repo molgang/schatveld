@@ -9,9 +9,35 @@ from . import config, field, loot, cadastre
 
 
 def new_profile():
-    return {"role": None, "coins": 250, "rep": 0, "tools": {}, "permit": False,
-            "inv": {}, "lastCropByParcel": {}, "pesticideByParcel": {},
-            "digLog": []}
+    return {"role": None, "coins": config.STARTING["coins"], "rep": 0, "tools": {},
+            "permit": False, "inv": {}, "lastCropByParcel": {},
+            "pesticideByParcel": {}, "digLog": [], "museum": []}
+
+
+def rank_of(rep):
+    """Rep -> rangtitel (maakt reputatie zichtbare progressie)."""
+    title = config.RANKS[0][1]
+    for threshold, name in config.RANKS:
+        if rep >= threshold:
+            title = name
+    return title
+
+
+_LOOT_IDS = {f["id"] for f in loot.TABLE}
+
+
+def payout_for(find, value, illegal):
+    """Uitbetaling voor een vondst. Significante (Schatzregal) vondsten: legaal =
+    max(35%, vloer) zodat zeldzamer altijd meer betaalt; illegaal = 10% heler-waarde
+    (beschlagnahmt). Gewone vondsten: volle waarde. Retour (payout, significant, confiscated)."""
+    significant = find["state"] or find["value"] >= config.SCHATZREGAL["significantValue"]
+    if not significant:
+        return find["value"], False, False
+    if illegal:
+        return int(find["value"] * config.SCHATZREGAL["illegalFeeFraction"]), True, True
+    fee = int(find["value"] * config.SCHATZREGAL["finderFeeFraction"])
+    floor = min(find["value"], config.PAYOUT["softCap"])
+    return max(fee, floor), True, False
 
 
 class Brain:
@@ -52,7 +78,17 @@ class Brain:
     def state(self, user):
         p = self._p(user)
         return {"role": p["role"], "coins": p["coins"], "rep": p["rep"],
-                "tools": p["tools"], "permit": p["permit"], "inv": p["inv"]}
+                "rank": rank_of(p["rep"]), "tools": p["tools"], "permit": p["permit"],
+                "inv": p["inv"], "museum": len(p.get("museum", [])),
+                "museumTotal": len(loot.TABLE),
+                "objective": config.OBJECTIVES.get(p["role"] or "", "")}
+
+    def museum(self, user):
+        p = self._p(user)
+        collected = p.get("museum", [])
+        total = len(loot.TABLE)
+        return {"collected": collected, "total": total,
+                "pct": round(100 * len(collected) / total) if total else 0}
 
     # -- acties --
     def join(self, user, role=None):
@@ -65,6 +101,12 @@ class Brain:
                     if parcel["use"] == "Acker" and not parcel["owner"] and n < 4:
                         parcel["owner"] = user
                         n += 1
+            elif role == "Archeoloog" and not p["tools"].get("Metaaldetector"):
+                # startkit: schep + detector gratis + munten tot aan de vergunning,
+                # zodat legaal graven meteen mogelijk is (fixet de softlock).
+                for tool in config.STARTING["archeoloogKit"]:
+                    p["tools"][tool] = True
+                p["coins"] = max(p["coins"], config.STARTING["archeoloogCoins"])
         self.save()
         return self.state(user)
 
@@ -100,19 +142,27 @@ class Brain:
             ctx = cadastre.context(col, row)
             find = loot.roll(v, ctx["coastal"], ctx["wurt"], self.rng)
 
-        payout = find["value"]
-        schatz = find["state"] or find["value"] >= config.SCHATZREGAL["significantValue"]
-        if schatz:
-            payout = int(find["value"] * config.SCHATZREGAL["finderFeeFraction"])
-            p["rep"] += 5
+        payout, schatz, confiscated = payout_for(find, find["value"], bool(illegal))
+        if schatz and not illegal:
+            p["rep"] += 5          # legaal aangemelde significante vondst
+        elif illegal:
+            p["rep"] -= 5 if schatz else 3   # Raubgrabung: zwaarder bij Schatzregal
+
+        # Landesmuseum: eerste keer dat je deze vondst-soort vindt = Erstfund-bonus.
+        first_find = find["id"] in _LOOT_IDS and find["id"] not in p["museum"]
+        if first_find:
+            p["museum"].append(find["id"])
+            payout += int(find["value"] * config.MUSEUM["erstfundBonusFraction"])
+            p["rep"] += config.MUSEUM["erstfundRep"]
+
         p["inv"][find["id"]] = p["inv"].get(find["id"], 0) + 1
         p["coins"] += payout
-        if illegal:
-            p["rep"] -= 3
         self.save()
         return {"ok": True, "metal": v, "find": find, "payout": payout,
-                "schatzregal": schatz, "illegal": bool(illegal),
-                "coins": p["coins"]}
+                "schatzregal": schatz, "confiscated": confiscated,
+                "illegal": bool(illegal), "firstFind": first_find,
+                "museum": len(p["museum"]), "museumTotal": len(loot.TABLE),
+                "rep": p["rep"], "rank": rank_of(p["rep"]), "coins": p["coins"]}
 
     def plough(self, user, col, row, crop):
         p = self._p(user)

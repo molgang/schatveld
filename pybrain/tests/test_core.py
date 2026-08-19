@@ -2,6 +2,7 @@
 import os, sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from schatveld_core import Brain, field, loot, cadastre, config
+from schatveld_core.economy import payout_for, rank_of
 
 
 def test_field_deterministic_and_range():
@@ -59,6 +60,49 @@ def test_police_fine_needs_evidence():
     b._p("dig")["tools"]["Schep"] = True
     b.dig("dig", 20, 20)                    # permit=False -> illegal
     assert b.fine("cop", "dig", "Raubgrabung")["ok"] is True
+
+
+def test_fresh_archeoloog_can_start_no_softlock():
+    """Regressie: een verse Archeoloog kan LEGAAL graven zonder handmatig munten/tools
+    te injecteren — precies de softlock die de demo met coins=600 verborg."""
+    b = Brain(seed=config.WORLD["seed"])
+    st = b.join("anna", "Archeoloog")
+    assert st["tools"].get("Schep") and st["tools"].get("Metaaldetector")   # gratis startkit
+    assert st["coins"] >= config.SHOP["Nachforschungsgenehmigung"]["price"] # vergunning haalbaar
+    assert b.buy("anna", "Nachforschungsgenehmigung")["ok"]
+    res = b.dig("anna", 7, 7)                 # onbeheerd land + vergunning = legaal
+    assert res["ok"] and res["illegal"] is False
+
+
+def test_payout_monotonic_no_inversion():
+    """Zeldzamer betaalt ALTIJD meer: een legale fibula/throne verslaat een gewone munt."""
+    ids = {f["id"]: f for f in loot.TABLE}
+    fibula = payout_for(ids["fibula"], ids["fibula"]["value"], illegal=False)[0]
+    coin = payout_for(ids["coin_medieval"], ids["coin_medieval"]["value"], illegal=False)[0]
+    gold = payout_for(ids["coin_gold"], ids["coin_gold"]["value"], illegal=False)[0]
+    throne = payout_for(ids["throne_relic"], ids["throne_relic"]["value"], illegal=False)[0]
+    assert fibula > coin                      # geen inversie meer (was 56 < 120)
+    assert throne > gold                       # top-vondst betaalt het meest
+
+
+def test_illegal_schatzregal_is_confiscated():
+    """Raubgrabung van een significante vondst = beschlagnahmt: veel minder loon."""
+    fib = {f["id"]: f for f in loot.TABLE}["fibula"]
+    legal = payout_for(fib, fib["value"], illegal=False)
+    illegal = payout_for(fib, fib["value"], illegal=True)
+    assert legal[1] and illegal[1]            # beide significant
+    assert illegal[2] is True and legal[2] is False   # alleen illegaal beschlagnahmt
+    assert illegal[0] < legal[0]              # vergunning heeft echte ROI
+
+
+def test_museum_first_find_bonus_and_rank():
+    b = Brain(seed=config.WORLD["seed"])
+    b.join("m", "Archeoloog"); b.buy("m", "Nachforschungsgenehmigung")
+    res = b.dig("m", 7, 7)                     # metaal 84 -> een echte vondst
+    assert res["find"]["id"] != "rusty_iron"
+    assert res["firstFind"] is True and res["museum"] == 1
+    assert b.museum("m")["total"] == len(loot.TABLE)
+    assert rank_of(0) == "Sondengänger" and rank_of(60) == "Landesarchäologe"
 
 
 def test_two_players_same_block_same_find():
