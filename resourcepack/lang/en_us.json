@@ -11,7 +11,7 @@
   "schatveld.item.shovel": "Shovel",
   "schatveld.item.tractor": "Tractor",
   "schatveld.item.police_car": "Police Car",
-  "schatveld.vehicle.boarded": "Driving the %1$s — sneak to park, right-click it to drive again.",
+  "schatveld.vehicle.boarded": "Driving the %1$s — sneak to get off; right-click the item to drive again.",
   "schatveld.vehicle.police_offroad": "Police cars must stay on the road!",
   "schatveld.vehicle.interact": "%1$s is within reach (≤5 blocks).",
   "schatveld.vehicle.too_far": "Too far — get within 5 blocks to interact.",
