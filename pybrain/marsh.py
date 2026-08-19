@@ -10,6 +10,8 @@ BLOCKS = {
     "water":    ("minecraft:water",       (58, 104, 158)),
     "clay":     ("minecraft:clay",        (150, 158, 168)),
     "dirt":     ("minecraft:dirt",        (108, 84, 60)),
+    "sand":     ("minecraft:sand",        (214, 204, 160)),   # onderliggend Geest-zand
+    "sandstone":("minecraft:sandstone",   (200, 190, 150)),   # basislaag
     "grass":    ("minecraft:grass_block", (94, 140, 74)),
     "deich":    ("minecraft:grass_block", (78, 128, 66)),
     "farmland": ("minecraft:farmland",    (96, 72, 50)),
@@ -40,10 +42,15 @@ def build():
     def box(x0, z0, x1, z1, y0, y1, key):
         regions.append((x0, y0, z0, x1, y1, z1, key))
 
-    # 1) basis: klei-maaiveld over het hele veld
-    box(0, 0, W - 1, D - 1, BASE, BASE, "clay")
+    # 1) fundament als een ECHTE grond-doorsnede (Land-Wursten marsch): Klei bovenop,
+    #    daaronder ondergrond, dan Geest-zand, dan zandsteen als basis. Zo is water in de
+    #    sloot max 1 blok diep (klei-vloer eronder) en zijn de velden geen bodemloos gat.
+    box(0, 0, W - 1, D - 1, BASE - 2, BASE, "clay")           # Klei (maaiveld + ondergrond)
+    box(0, 0, W - 1, D - 1, BASE - 4, BASE - 3, "dirt")       # ondergrond
+    box(0, 0, W - 1, D - 1, BASE - 7, BASE - 5, "sand")       # Geest-zand
+    box(0, 0, W - 1, D - 1, BASE - 9, BASE - 8, "sandstone")  # basislaag
 
-    # 2) Watt/zee aan de westrand (x 0-2), 1 lager, water
+    # 2) Watt/zee aan de westrand (x 0-2): water, 1 blok diep op de klei-vloer
     box(0, 0, 2, D - 1, BASE, BASE, "water")
 
     # 3) Deich (dijk) x 3-4, +3 hoog, gras
