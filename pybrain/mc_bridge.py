@@ -80,19 +80,38 @@ def handle_event(brain, rc, kind, x, y, z):
 
 def run(host="127.0.0.1", port=25575, password="schatveld", poll=0.5, once=False):
     brain = Brain()
-    with Rcon(host, port, password) as rc:
-        print(f"[bridge] verbonden met RCON {host}:{port}")
-        while True:
+
+    def connect():
+        rc = Rcon(host, port, password, timeout=10).connect()
+        print(f"[bridge] verbonden met RCON {host}:{port}", flush=True)
+        return rc
+
+    rc = connect()
+    while True:
+        try:
             out = rc.command("data get storage schatveld:ev queue")
             events = parse_queue(out)
             if events:
                 for (kind, x, y, z) in events:
                     r = handle_event(brain, rc, kind, x, y, z)
-                    print(f"[bridge] {r}")
+                    print(f"[bridge] {r}", flush=True)
                 rc.command("data modify storage schatveld:ev queue set value []")
             if once:
                 return events
             time.sleep(poll)
+        except (TimeoutError, OSError, ConnectionError) as e:
+            # transient (server pauzeert bij lege wereld / herstart) → herverbind i.p.v. crashen
+            print(f"[bridge] RCON-fout, herverbinden: {e}", flush=True)
+            try:
+                rc.close()
+            except Exception:
+                pass
+            time.sleep(2)
+            try:
+                rc = connect()
+            except Exception as e2:
+                print(f"[bridge] herverbinden mislukt: {e2}", flush=True)
+                time.sleep(3)
 
 
 if __name__ == "__main__":
