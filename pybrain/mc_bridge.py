@@ -84,12 +84,21 @@ def run(host="127.0.0.1", port=25575, password="schatveld", poll=0.5, once=False
 
     def connect():
         rc = Rcon(host, port, password, timeout=10).connect()
-        print(f"[bridge] verbonden met RCON {host}:{port}", flush=True)
+        # brain-modus: zet solo/standalone UIT zodat de datapack niet óók loot geeft
+        try:
+            rc.command("scoreboard players set #solo sv_flags 0")
+        except Exception:
+            pass
+        print(f"[bridge] verbonden met RCON {host}:{port} (brain-modus, solo=0)", flush=True)
         return rc
 
     rc = connect()
+    i = 0
     while True:
         try:
+            i += 1
+            if i % 20 == 0:   # herbevestig brain-modus (na een /reload staat #solo weer op 1)
+                rc.command("scoreboard players set #solo sv_flags 0")
             out = rc.command("data get storage schatveld:ev queue")
             events = parse_queue(out)
             if events:

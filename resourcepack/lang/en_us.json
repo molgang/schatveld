@@ -18,6 +18,7 @@
   "schatveld.detector.received": "Metal detector received — right-click the ground to measure.",
   "schatveld.detector.reading": "Detector: %1$s/100",
   "schatveld.dig.found": "Metal %1$s → %2$s (€%3$s)",
+  "schatveld.dig.found_solo": "Metal %1$s — something turned up!",
   "schatveld.schatzregal.state": "Schatzregal → State of Bremen",
   "schatveld.schatzregal.confiscated": "Schatzregal → confiscated",
   "schatveld.raubgrabung": "Illegal excavation (Raubgrabung)",
@@ -35,5 +36,6 @@
   "schatveld.find.fibula": "Fibula (cloak pin)",
   "schatveld.find.coin_medieval": "Medieval Coin",
   "schatveld.find.coin_gold": "Gold Coin",
-  "schatveld.find.throne_relic": "Wurt Artefact (throne grave)"
+  "schatveld.find.throne_relic": "Wurt Artefact (throne grave)",
+  "schatveld.find.coin_hoard": "Coin Hoard"
 }
