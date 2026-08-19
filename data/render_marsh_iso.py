@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(
 import marsh
 
 TW, TH, CH = 7, 4, 5          # tegel halfbreedte, halfhoogte, kubushoogte (px)
-FLOOR = marsh.BASE - 1         # onderkant van de geëxtrudeerde prisma's
+FLOOR = marsh.BASE - 4         # onderkant van de geëxtrudeerde prisma's (grond-slab)
 
 
 def shade(rgb, f):
