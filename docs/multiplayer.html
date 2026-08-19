@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Schatveld — Multiplayer (localhost server)</title>
+<style>
+  :root{--bg:#0f1620;--panel:#182432;--panel2:#1e2c3c;--ink:#e8eef4;--muted:#9db0c4;
+    --gold:#e6c229;--green:#7ec36b;--blue:#5aa9e6;--line:#2b3d50;--red:#e0645a}
+  *{box-sizing:border-box}
+  body{margin:0;font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:radial-gradient(1200px 600px at 50% -10%,#1a2836,#0f1620) fixed;color:var(--ink)}
+  .wrap{max-width:960px;margin:0 auto;padding:28px 20px 80px}
+  header{text-align:center;padding:22px 0 8px}
+  h1{margin:0;font-size:32px;color:var(--gold)}
+  .sub{color:var(--muted);margin-top:6px}
+  .banner{margin:18px 0;border:1px solid #2c5a3a;background:#152b1d;border-radius:12px;padding:14px 18px;
+    display:flex;gap:12px;align-items:center}
+  .dotlive{width:12px;height:12px;border-radius:50%;background:#54d17a;box-shadow:0 0 0 4px #54d17a22;flex:0 0 12px}
+  h2{font-size:22px;margin:32px 0 12px;color:var(--green);border-bottom:1px solid var(--line);padding-bottom:6px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin:14px 0}
+  ol.steps{counter-reset:s;list-style:none;padding:0;margin:0}
+  ol.steps>li{counter-increment:s;position:relative;padding:12px 0 12px 48px;border-bottom:1px dashed var(--line)}
+  ol.steps>li:last-child{border-bottom:0}
+  ol.steps>li::before{content:counter(s);position:absolute;left:0;top:10px;width:32px;height:32px;border-radius:50%;
+    background:var(--blue);color:#08131f;font-weight:700;display:grid;place-items:center}
+  kbd{background:#0b1119;border:1px solid var(--line);border-bottom-width:2px;border-radius:6px;padding:1px 7px;
+    font-family:ui-monospace,Menlo,monospace;font-size:13px;color:#f0e7c8}
+  code{background:#0b1119;border:1px solid var(--line);border-radius:6px;padding:2px 7px;
+    font-family:ui-monospace,Menlo,monospace;font-size:13.5px;color:#bfe3ff}
+  .big{font-size:15px}
+  table{width:100%;border-collapse:collapse;margin:8px 0}
+  td,th{border:1px solid var(--line);padding:8px 10px;text-align:left;font-size:14px}
+  th{background:var(--panel2);color:var(--muted)}
+  .warn{background:#251a17;border:1px solid #4a3126;border-left:4px solid var(--red);border-radius:10px;padding:12px 16px;margin:14px 0}
+  .tip{background:#16241b;border:1px solid #2c4a34;border-left:4px solid var(--green);border-radius:10px;padding:12px 16px;margin:14px 0}
+  .muted{color:var(--muted)} .g{color:var(--green)} .b{color:var(--blue)}
+  footer{text-align:center;color:var(--muted);margin-top:40px;font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Schatveld — Multiplayer</h1>
+    <div class="sub">The full version, on a local server &amp; the Python "brain" · Minecraft 1.21.10</div>
+  </header>
+
+  <div class="banner">
+    <span class="dotlive"></span>
+    <div><b>The server is already running</b> on this computer (server + brain + bridge). Just connect from Minecraft.
+    <span class="muted">Address: <code>localhost</code></span></div>
+  </div>
+
+  <h2>▶ Connect &amp; play</h2>
+  <div class="card">
+    <ol class="steps big">
+      <li>Open the <b>Modrinth App</b> → profile <b>chemlab</b> → <b>Play</b>.</li>
+      <li>In the menu: <b>Multiplayer</b>. The server <b class="g">Schatveld (localhost)</b> is already in your list — click it and <b>Join</b>. <span class="muted">(Or <b>Direct Connection</b> → <code>localhost</code>.)</span></li>
+      <li>You spawn <b>on the marsh</b>. Press <kbd>T</kbd> and run <code>/function schatveld:menu</code>, then click a role.</li>
+      <li><b>Archaeologist</b> → you get the <b>Metal Detector + Shovel</b>. <b>Right-click the ground</b> → reading <b>0–100</b>. <b>Dig</b> → your find (with the € payout).</li>
+    </ol>
+  </div>
+
+  <div class="tip"><b>Language:</b> Options → Language — English (default) + Deutsch, Français, Русский, Español, Português (BR), 简体中文, 日本語, Nederlands.</div>
+
+  <h2>💶 What multiplayer adds (the "brain")</h2>
+  <div class="card">
+    <p>Everything from singleplayer <i>plus</i> the economy — all computed by the Python brain, shared across the world:</p>
+    <ul>
+      <li><b>€ payouts</b> for every find, and the <b>Schatzregal</b>: significant finds become state property and pay a <b>finder's fee</b> — but only if you dug <b>legally</b> (with a <i>Nachforschungsgenehmigung</i> permit). Illegal digging = <i>Raubgrabung</i>, and the find is confiscated.</li>
+      <li><b>Landesmuseum</b> — the first time you find each of the 13 kinds, you get an <b>Erstfund bonus</b> (a collection to complete, <span class="muted">n/13</span>).</li>
+      <li><b>Reputation ranks</b> — Sondengänger → Feldforscher → Denkmalpfleger → Landesarchäologe.</li>
+      <li><b>Farmer &amp; Police scoring</b> — crop rotation bonuses/penalties, pesticide-buffer rules, and fines.</li>
+    </ul>
+  </div>
+
+  <h2>🎭 Roles &amp; vehicles</h2>
+  <table>
+    <tr><th>Role</th><th>How to get it</th><th>What you do</th></tr>
+    <tr><td class="b">Archaeologist</td><td><code>/function schatveld:menu</code> → Archaeologist</td><td>Detect (right-click) &amp; dig; buy the permit to dig legally.</td></tr>
+    <tr><td class="g">Farmer</td><td>…→ Farmer (gets a <b>Tractor</b>)</td><td>Right-click ground to drive; <b>sneak to park</b>. Tractor goes <b>anywhere</b>.</td></tr>
+    <tr><td style="color:#c9b6e0">Police</td><td>…→ Police (gets a <b>Police Car</b>)</td><td>Same driving, but <b>roads only</b> — leave the road and you're ejected. Interact within <b>5 blocks</b>.</td></tr>
+  </table>
+
+  <h2>⚙️ Managing the server (terminal)</h2>
+  <div class="card">
+    <table>
+      <tr><th>Do</th><th>Command</th></tr>
+      <tr><td>Start everything (server + brain + bridge)</td><td><code>bash pybrain/play.sh</code></td></tr>
+      <tr><td>Stop everything</td><td><code>bash pybrain/stop.sh</code></td></tr>
+    </table>
+    <p class="muted">The marsh is already built and the world is saved between sessions.</p>
+  </div>
+
+  <div class="warn">
+    <b>Items look purple/black or icons missing?</b> The resource pack isn't applying. In Minecraft:
+    <b>Options → Resource Packs</b> → make sure <b>Schatveld</b> is in the <i>Selected</i> column (drag it over), then <b>Done</b>.
+    If it still refuses, that's a pack-metadata issue — tell the developer to check <code>chemlab/logs/latest.log</code>.
+  </div>
+
+  <p class="muted" style="text-align:center;margin-top:20px">Prefer offline? See <a href="how-to-play.html" style="color:var(--blue)">the singleplayer guide</a>.</p>
+  <footer>Schatveld · molgang/schatveld · Weddewarden (Land Wursten) 🪏</footer>
+</div>
+</body>
+</html>
