@@ -33,17 +33,27 @@ def parse_queue(snbt: str):
     return events
 
 
-def _mc_give(rc, x, y, z, mc_item, count, msg, color="green", special=False):
-    # geef aan de dichtstbijzijnde speler bij de graaflocatie + juice (deeltjes/geluid/actionbar)
+def _dig_feedback(rc, x, y, z, find, res):
+    """Geef de vondst + juice (deeltjes/geluid/actionbar), volledig via translate-keys
+    zodat de tekst de client-taal volgt (Opties → Taal)."""
     at = f"execute positioned {x:.2f} {y:.2f} {z:.2f} run"
-    rc.command(f"{at} give @p[distance=..6] {mc_item} {count}")
-    # aarde-explosie + graafgeluid; bijzondere vondst = extra klank
+    name = f'{{"translate":"schatveld.find.{find["id"]}"}}'
+    # item met gelokaliseerde naam
+    rc.command(f'{at} give @p[distance=..6] {find["mc"]}[minecraft:custom_name={name}] 1')
     rc.command(f'{at} particle minecraft:block{{block_state:{{Name:"minecraft:dirt"}}}} '
                f"{x:.2f} {y+0.5:.2f} {z:.2f} 0.3 0.3 0.3 0.1 30")
     rc.command(f"{at} playsound minecraft:block.gravel.break block @p[distance=..8] {x:.2f} {y:.2f} {z:.2f} 1 1")
-    if special:
+    if res["schatzregal"] or res.get("firstFind"):
         rc.command(f"{at} playsound minecraft:entity.player.levelup block @p[distance=..8] {x:.2f} {y:.2f} {z:.2f} 1 1.4")
-    rc.command(f'{at} title @p[distance=..8] actionbar {{"text":"{msg}","color":"{color}"}}')
+    color = "gold" if res["schatzregal"] else "green"
+    parts = [f'{{"translate":"schatveld.dig.found","with":["{res["metal"]}",{name},"{res["payout"]}"],"color":"{color}"}}']
+    if res.get("confiscated"):
+        parts.append('{"text":"  "},{"translate":"schatveld.schatzregal.confiscated","color":"red"}')
+    elif res["schatzregal"]:
+        parts.append('{"text":"  "},{"translate":"schatveld.schatzregal.state","color":"gold"}')
+    if res.get("illegal"):
+        parts.append('{"text":"  "},{"translate":"schatveld.raubgrabung","color":"red"}')
+    rc.command(f'{at} title @p[distance=..8] actionbar ["",{",".join(parts)}]')
 
 
 def handle_event(brain, rc, kind, x, y, z):
@@ -52,29 +62,20 @@ def handle_event(brain, rc, kind, x, y, z):
     if kind == "scan":
         col_color = "dark_gray" if v < 10 else ("gold" if v >= 70 else "yellow")
         rc.command(f"execute positioned {x:.2f} {y:.2f} {z:.2f} run "
-                   f'tellraw @p[distance=..8] ["",{{"text":"Detector (Python-brain): ","color":"aqua"}},'
-                   f'{{"text":"{v}","color":"{col_color}","bold":true}},{{"text":"/100","color":"gray"}}]')
+                   f'tellraw @p[distance=..8] {{"translate":"schatveld.detector.reading",'
+                   f'"with":[{{"text":"{v}","color":"{col_color}","bold":true}}],"color":"aqua"}}')
         return ("scan", v, None)
     # dig: laat de Brain de vondst bepalen (zelfde regels als Roblox)
     brain._p(MC_USER)["tools"]["Schep"] = True
     brain._p(MC_USER)["permit"] = True
     res = brain.dig(MC_USER, col, row)
     find = res["find"]
-    label = find["name"].replace('"', "'")
-    if res.get("confiscated"):
-        tag = " [Schatzregal -> beschlagnahmt]"
-    elif res["schatzregal"]:
-        tag = " [Schatzregal -> Land Bremen]"
-    else:
-        tag = ""
-    special = res["schatzregal"] or res.get("firstFind")
-    _mc_give(rc, x, y, z, find["mc"], 1,
-             f"metaal {res['metal']} -> {label} (EUR {res['payout']}){tag}",
-             "gold" if res["schatzregal"] else "green", special=special)
+    _dig_feedback(rc, x, y, z, find, res)
     if res.get("firstFind"):
         rc.command(f'execute positioned {x:.2f} {y:.2f} {z:.2f} run tellraw @p[distance=..8] '
-                   f'["",{{"text":"Neu im Landesmuseum: ","color":"gold","bold":true}},'
-                   f'{{"text":"{label} ({res["museum"]}/{res["museumTotal"]})","color":"yellow"}}]')
+                   f'{{"translate":"schatveld.museum.new","with":['
+                   f'{{"translate":"schatveld.find.{find["id"]}"}},"{res["museum"]}","{res["museumTotal"]}"],'
+                   f'"color":"gold"}}')
     return ("dig", v, find["name"])
 
 

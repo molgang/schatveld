@@ -50,7 +50,7 @@ def render():
     PAD_T = 78
     text_w = max(int(fnt(26).getlength(TITLE)), int(fnt(14).getlength(SUB))) + 48
     W = max(int(maxx - minx) + 40, text_w)
-    H = int(maxy - miny) + PAD_T + 60
+    H = int(maxy - miny) + PAD_T + 92
     ox = -minx + 20
     oy = -miny + PAD_T
 
@@ -98,8 +98,8 @@ def render():
     leg = [("Watt / Gräben", "water"), ("Deich", "deich"), ("Wurt + boerderij", "planks"),
            ("rijp graan", "grain"), ("mais (2 hoog)", "maize"), ("grasland", "pasture"),
            ("geploegd (zwart)", "ploughed"), ("graan-stoppel", "grain_stub"),
-           ("mais-stoppel", "maize_stub")]
-    lx, ly = 24, H - 60
+           ("mais-stoppel", "maize_stub"), ("verharde weg", "road")]
+    lx, ly = 24, H - 86
     for i, (label, key) in enumerate(leg):
         col = marsh.BLOCKS[key][1]
         bx = lx + (i % 3) * 290

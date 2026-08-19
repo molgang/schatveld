@@ -63,34 +63,43 @@ mcf(f"data/{NS}/function/load.mcfunction", [
     "scoreboard players set #c101 sv_metal 101",
     "# event-queue init (one brain: Python leest hier de dig/scan-events)",
     "data modify storage schatveld:ev queue set value []",
-    "tellraw @a {\"text\":\"[Schatveld] geladen — /function schatveld:menu voor rol & detector\",\"color\":\"gold\"}",
+    "tellraw @a {\"translate\":\"schatveld.loaded\",\"color\":\"gold\"}",
 ])
 
-# ---- menu / rollen ----
+# ---- menu / rollen (alle tekst via translate-keys → taal volgt de client-instelling) ----
 mcf(f"data/{NS}/function/menu.mcfunction", [
-    "tellraw @s [\"\",{\"text\":\"Schatveld Weddewarden\\n\",\"color\":\"gold\",\"bold\":true},"
-    "{\"text\":\"Kies je rol: \",\"color\":\"white\"},"
-    "{\"text\":\"[Archeoloog]\",\"color\":\"aqua\",\"clickEvent\":{\"action\":\"run_command\",\"value\":\"/function schatveld:role/archeoloog\"}},"
+    "tellraw @s [\"\",{\"translate\":\"schatveld.menu.title\",\"color\":\"gold\",\"bold\":true},{\"text\":\"\\n\"},"
+    "{\"translate\":\"schatveld.menu.choose\",\"color\":\"white\"},"
+    "{\"translate\":\"schatveld.role.archeoloog\",\"color\":\"aqua\",\"clickEvent\":{\"action\":\"run_command\",\"value\":\"/function schatveld:role/archeoloog\"}},"
     "{\"text\":\"  \"},"
-    "{\"text\":\"[Boer]\",\"color\":\"green\",\"clickEvent\":{\"action\":\"run_command\",\"value\":\"/function schatveld:role/boer\"}},"
+    "{\"translate\":\"schatveld.role.boer\",\"color\":\"green\",\"clickEvent\":{\"action\":\"run_command\",\"value\":\"/function schatveld:role/boer\"}},"
     "{\"text\":\"  \"},"
-    "{\"text\":\"[Politie]\",\"color\":\"blue\",\"clickEvent\":{\"action\":\"run_command\",\"value\":\"/function schatveld:role/politie\"}}]",
+    "{\"translate\":\"schatveld.role.politie\",\"color\":\"blue\",\"clickEvent\":{\"action\":\"run_command\",\"value\":\"/function schatveld:role/politie\"}}]",
 ])
 for role, code, item in (("archeoloog", 2, None), ("boer", 1, None), ("politie", 3, None)):
     lines = [f"scoreboard players set @s sv_role {code}",
              f"tag @s add sv_{role}",
-             f"tellraw @s {{\"text\":\"Rol: {role}\",\"color\":\"yellow\"}}"]
+             f"tellraw @s {{\"translate\":\"schatveld.role.chosen\",\"with\":[{{\"translate\":\"schatveld.role.{role}\"}}],\"color\":\"yellow\"}}"]
     if role == "archeoloog":
         lines.append("function schatveld:shop/give_detector")
-        lines.append("give @s wooden_shovel[item_name='\"Schep\"',custom_data={sv_shovel:1b}]")
+        lines.append("give @s wooden_shovel[item_name={\"translate\":\"schatveld.item.shovel\"},"
+                     "item_model=\"schatveld:shovel\",custom_data={sv_shovel:1b}]")
+    elif role == "boer":
+        # tractor-voertuigitem (custom 3D-model); rechtsklik = op-/afstappen (voertuigsysteem)
+        lines.append("give @s minecraft:stick[item_model=\"schatveld:tractor\","
+                     "item_name={\"translate\":\"schatveld.item.tractor\"},custom_data={sv_vehicle:\"tractor\"}]")
+    elif role == "politie":
+        lines.append("give @s minecraft:stick[item_model=\"schatveld:police_car\","
+                     "item_name={\"translate\":\"schatveld.item.police_car\"},custom_data={sv_vehicle:\"police_car\"}]")
     mcf(f"data/{NS}/function/role/{role}.mcfunction", lines)
 
-# ---- winkel: geef de metaaldetector (carrot_on_a_stick + custom_data) ----
+# ---- winkel: geef de metaaldetector (carrot_on_a_stick + custom_data + 3D-model) ----
 mcf(f"data/{NS}/function/shop/give_detector.mcfunction", [
-    "give @s carrot_on_a_stick[item_name='{\"text\":\"Metaaldetector\",\"color\":\"aqua\"}',"
+    "give @s carrot_on_a_stick[item_name={\"translate\":\"schatveld.item.detector\",\"color\":\"aqua\"},"
+    "item_model=\"schatveld:metal_detector\","
     "custom_data={sv_detector:1b},"
-    "lore=['{\"text\":\"Rechtsklik grond: toont metaalwaarde 0-100\",\"color\":\"gray\"}']]",
-    "tellraw @s {\"text\":\"Metaaldetector ontvangen — rechtsklik op grond om te meten.\",\"color\":\"green\"}",
+    "lore=[{\"translate\":\"schatveld.item.detector.lore\",\"color\":\"gray\"}]]",
+    "tellraw @s {\"translate\":\"schatveld.detector.received\",\"color\":\"green\"}",
 ])
 
 # ---- metaalwaarde berekenen voor de speler-positie (deterministische hash) ----

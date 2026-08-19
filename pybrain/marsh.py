@@ -21,6 +21,7 @@ BLOCKS = {
     "ploughed":  ("minecraft:podzol",       (66, 48, 32)),    # vers zwart-geploegd
     "pasture":   ("minecraft:grass_block",  (96, 152, 72)),   # groen grasland/weide
     "path":     ("minecraft:dirt_path",   (132, 116, 82)),
+    "road":     ("minecraft:gravel",       (112, 110, 116)),  # verharde weg (politie + tractor)
     "planks":   ("minecraft:oak_planks",  (164, 132, 86)),
     "log":      ("minecraft:oak_log",     (110, 88, 58)),
     "cobble":   ("minecraft:cobblestone", (122, 122, 126)),
@@ -71,7 +72,7 @@ def build():
     strips = [(5, 11), (13, 19), (21, 27), (29, 35), (37, 43)]
     k = 0
     for i, (x0, x1) in enumerate(strips):
-        for seg, (z0, z1) in enumerate([(0, 20), (22, D - 1)]):
+        for seg, (z0, z1) in enumerate([(0, 19), (22, D - 1)]):   # z20-21 vrij voor de weg
             if x0 <= 15 and z0 >= 22:        # sla de Wurt-zone over
                 continue
             st = states[k % len(states)]; k += 1
@@ -82,8 +83,13 @@ def build():
                 box(x0, z0, x1, z1, BASE + 1, BASE + 2, "maize")   # mais (2 hoog)
             else:                                                   # vlak oppervlak-stadium
                 box(x0, z0, x1, z1, BASE, BASE, st)                # pasture/ploughed/stoppel
-    # 7) een pad langs de Deich
-    box(5, 0, 5, D - 1, BASE, BASE, "path")
+
+    # 7) wegennet: centrale E-W patrouilleweg (causeway over de Gräben) + oostelijke N-Z weg.
+    #    Politie rijdt hierop; de tractor mag de weg af, het veld op.
+    box(5, 20, W - 1, 21, BASE, BASE, "road")     # centrale weg (z20-21)
+    box(46, 0, 47, D - 1, BASE, BASE, "road")     # oostelijke ringweg (x46-47)
+    box(13, 20, 14, 22, BASE, BASE, "road")       # aftakking naar de Wurt
+    box(5, 0, 5, D - 1, BASE, BASE, "path")       # voetpad langs de Deich
 
     return regions, points
 

@@ -158,6 +158,14 @@ def main():
             "description": "Schatveld — vondsten & metaaldetector (Weddewarden)",
         }
     }
+    # 3D item-modellen (metaaldetector/schep/tractor/politieauto) genereren
+    import build_models
+    models_base = build_models.write_all()
+
+    # taalbestanden (en_us = basis; de/fr/ru/... vullen aan → speler kiest in Opties → Taal)
+    lang_dir = os.path.join(HERE, "lang")
+    langs = sorted(f for f in os.listdir(lang_dir) if f.endswith(".json")) if os.path.isdir(lang_dir) else []
+
     with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
         z.writestr("pack.mcmeta", json.dumps(mcmeta, indent=2))
         b = io.BytesIO(); Image.fromarray(pack_icon(), "RGBA").save(b, "PNG")
@@ -166,7 +174,17 @@ def main():
             b = io.BytesIO()
             Image.fromarray(fn(), "RGBA").save(b, "PNG")
             z.writestr(f"assets/minecraft/textures/item/{item}.png", b.getvalue())
-    print(f"resource pack -> {out}  ({len(TEX)} vondst-texturen + icoon)")
+        # modellen + items + effen-kleur-texturen inbakken
+        for root, _dirs, files in os.walk(models_base):
+            for fn in files:
+                full = os.path.join(root, fn)
+                z.write(full, os.path.relpath(full, models_base))
+        # lang-bestanden
+        for lf in langs:
+            with open(os.path.join(lang_dir, lf), encoding="utf-8") as fh:
+                z.writestr(f"assets/schatveld/lang/{lf}", fh.read())
+    print(f"resource pack -> {out}  ({len(TEX)} vondst-texturen, "
+          f"{len(build_models.MODELS)} 3D-modellen, {len(langs)} talen)")
     return out
 
 
