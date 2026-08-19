@@ -1,0 +1,43 @@
+SCHATVELD — Setup
+=================
+A treasure-hunting game on the real marshland of Weddewarden (Land Wursten),
+Minecraft Java 1.21.10 (Fabric). Detect metal, dig it up, farm, and police the polder.
+
+WHAT'S IN THIS ZIP
+- schatveld-world-1.21.10.mrpack   the modpack (mods + datapack + resource pack) — EASIEST
+- schatveld_datapack.zip           the game datapack (for manual / singleplayer setup)
+- schatveld_resources.zip          the resource pack (3D models, item textures, 9 languages)
+- schatveld-shaders-1.20.1.mrpack  optional shaders (Apple-Silicon-safe, MC 1.20.1)
+- how-to-play.html                 how to play (open in any browser)
+
+EASIEST SETUP (Modrinth App)
+1. Install the Modrinth App:  https://modrinth.com/app
+2. In the app:  + Add Instance  ->  From file  ->  choose  schatveld-world-1.21.10.mrpack
+   (it downloads all the mods automatically).
+3. Play the instance.
+4. Create a NEW world with "Allow Cheats: ON".
+5. Put the datapack in that world:
+   Modrinth -> the instance -> Open folder -> saves -> <your world> -> datapacks
+   -> paste  schatveld_datapack.zip  there.
+6. Turn on the resource pack:  Options -> Resource Packs -> move "Schatveld" to Selected.
+
+HOW TO PLAY (singleplayer)
+- On first join you automatically get a METAL DETECTOR + SHOVEL, and the marsh builds
+  around you.
+- HOLD the detector: a meter at the top of the screen and a number 0-100 show how much
+  metal is where you stand. Walk around to find a high reading.
+- DIG the ground (with the shovel) on a good spot. The reward scales with the value:
+      low  = iron nugget      average = iron ingot      high = GOLD if you're lucky
+- Roles: type  /function schatveld:menu  and pick Archaeologist / Farmer / Police.
+      Farmer gets a Tractor, Police a Police Car (right-click ground to drive, sneak to stop).
+- Language: Options -> Language (English, Deutsch, Francais, Russian, ... 9 total).
+
+SHADERS (optional, Apple Silicon Macs)
+- Import  schatveld-shaders-1.20.1.mrpack  as a SEPARATE instance (MC 1.20.1 + Iris +
+  Complementary Reimagined). These run on OpenGL 4.1; the 1.21 game world runs without Iris.
+
+FULL VERSION (euro economy, museum collection, reputation ranks) — needs a small server
+- Get the whole project:  https://github.com/molgang/schatveld
+  then run in a terminal:  bash pybrain/play.sh   and connect Minecraft to  localhost .
+
+Have fun digging the marsh!
