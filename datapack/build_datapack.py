@@ -8,12 +8,14 @@ Modrinth .mrpack, zonder mod. Kernloop:
 Realistische Land-Wursten-vondsten via vanilla-items als stand-in.
 Draai:  python3 build_datapack.py   ->  build/schatveld_datapack.zip + schatveld.mrpack
 """
-import json, os, shutil, zipfile, hashlib
+import json, os, shutil, zipfile, hashlib, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "build")
 PACK = os.path.join(OUT, "schatveld_datapack")
 NS = "schatveld"
+sys.path.insert(0, os.path.join(HERE, "..", "pybrain"))
+import marsh as marsh_spec   # gedeelde marsch-spec (zelfde als build_marsh.py)
 
 def w(path, content):
     full = os.path.join(PACK, path)
@@ -107,6 +109,11 @@ mcf(f"data/{NS}/function/on_join.mcfunction", [
     "function schatveld:shop/give_detector",
     "give @s wooden_shovel[item_name={\"translate\":\"schatveld.item.shovel\"},"
     "item_model=\"schatveld:shovel\",custom_data={sv_shovel:1b}]",
+    # bouw het marschland ÉÉN keer rond de speler (chunks geladen → werkt offline)
+    "scoreboard players add #marsh sv_flags 0",
+    "execute if score #marsh sv_flags matches 0 at @s run function schatveld:build_marsh",
+    "execute if score #marsh sv_flags matches 0 run tp @s ~ ~1 ~",
+    "scoreboard players set #marsh sv_flags 1",
     "tellraw @s {\"translate\":\"schatveld.loaded\",\"color\":\"gold\"}",
 ])
 
@@ -151,6 +158,21 @@ mcf(f"data/{NS}/function/load_const.mcfunction", [
 # haak load_const aan load
 with open(os.path.join(PACK, f"data/{NS}/function/load.mcfunction"), "a", encoding="utf-8") as f:
     f.write("function schatveld:load_const\n")
+
+# ---------------------------------------------------------------- marschland (datapack bouwt het)
+# Genereer een build_marsh-functie uit de gedeelde marsch-spec (marsh.py) en bouw het
+# landschap één keer bij oorsprong (0,63,0) op wereld-load. Zo verschijnt de wereld óók in
+# STANDALONE singleplayer (geen server/RCON nodig).
+# build_marsh draait AS/AT de speler → alle coords ~-relatief, gecentreerd op de speler
+# (offset x-24, z-18) met de kleivloer 1 onder de voeten (y-64). Zo zijn de chunks altijd
+# geladen (de speler staat er) en verschijnt de wereld ook in standalone singleplayer.
+_regions, _points = marsh_spec.build()
+_marsh = ["# marschland ~-relatief rond de speler (Watt/Deich/Wurt/Gräben/velden/wegen)"]
+for (x0, y0, z0, x1, y1, z1, key) in _regions:
+    _marsh.append(f"fill ~{x0-24} ~{y0-64} ~{z0-18} ~{x1-24} ~{y1-64} ~{z1-18} {marsh_spec.BLOCKS[key][0]}")
+for (x, y, z, key) in _points:
+    _marsh.append(f"setblock ~{x-24} ~{y-64} ~{z-18} {marsh_spec.BLOCKS[key][0]}")
+mcf(f"data/{NS}/function/build_marsh.mcfunction", _marsh)
 
 # ---- detector gebruikt op blok → meld de waarde ----
 w(f"data/{NS}/advancement/use_detector.json", {

@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Schatveld — How to Play</title>
+<style>
+  :root{
+    --bg:#0f1620; --panel:#182432; --panel2:#1e2c3c; --ink:#e8eef4; --muted:#9db0c4;
+    --gold:#e6c229; --green:#7ec36b; --blue:#5aa9e6; --water:#3a68a0; --line:#2b3d50; --red:#e0645a;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+       background:radial-gradient(1200px 600px at 50% -10%,#1a2836,#0f1620) fixed;color:var(--ink)}
+  .wrap{max-width:960px;margin:0 auto;padding:28px 20px 80px}
+  header{text-align:center;padding:26px 0 10px}
+  h1{margin:0;font-size:34px;letter-spacing:.3px;color:var(--gold)}
+  .sub{color:var(--muted);margin-top:6px}
+  .hero{margin:20px 0;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#0c131b}
+  .hero img{display:block;width:100%}
+  h2{font-size:22px;margin:34px 0 12px;color:var(--green);border-bottom:1px solid var(--line);padding-bottom:6px}
+  h3{margin:20px 0 6px;color:var(--blue);font-size:17px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin:14px 0}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:680px){.grid{grid-template-columns:1fr}}
+  ol.steps{counter-reset:s;list-style:none;padding:0;margin:0}
+  ol.steps>li{counter-increment:s;position:relative;padding:10px 0 10px 46px;border-bottom:1px dashed var(--line)}
+  ol.steps>li:last-child{border-bottom:0}
+  ol.steps>li::before{content:counter(s);position:absolute;left:0;top:8px;width:30px;height:30px;border-radius:50%;
+       background:var(--gold);color:#20160a;font-weight:700;display:grid;place-items:center}
+  kbd{background:#0b1119;border:1px solid var(--line);border-bottom-width:2px;border-radius:6px;padding:1px 7px;font-family:ui-monospace,Menlo,monospace;font-size:13px;color:#f0e7c8}
+  code{background:#0b1119;border:1px solid var(--line);border-radius:6px;padding:2px 6px;font-family:ui-monospace,Menlo,monospace;font-size:13px;color:#bfe3ff}
+  .pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:600;border:1px solid var(--line)}
+  .pill.on{background:#183020;color:var(--green);border-color:#2c5a3a}
+  .pill.srv{background:#1a2740;color:var(--blue);border-color:#2c4a6a}
+  .role{display:flex;gap:12px;align-items:flex-start;padding:10px 0}
+  .role .dot{flex:0 0 12px;height:12px;border-radius:50%;margin-top:7px}
+  table{width:100%;border-collapse:collapse;margin:6px 0}
+  td,th{border:1px solid var(--line);padding:8px 10px;text-align:left;font-size:14px}
+  th{background:var(--panel2);color:var(--muted)}
+  .warn{background:#251a17;border:1px solid #4a3126;border-left:4px solid var(--red);border-radius:10px;padding:12px 16px;margin:14px 0}
+  .tip{background:#16241b;border:1px solid #2c4a34;border-left:4px solid var(--green);border-radius:10px;padding:12px 16px;margin:14px 0}
+  .muted{color:var(--muted)}
+  footer{text-align:center;color:var(--muted);margin-top:40px;font-size:13px}
+  .imgcap{color:var(--muted);font-size:12px;text-align:center;padding:6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Schatveld — How to Play</h1>
+    <div class="sub">Treasure-hunting on the real marshland of Weddewarden · Land Wursten · Minecraft 1.21.10</div>
+  </header>
+
+  <div class="hero">
+    <img src="../data/schatveld_marsh_iso.png" alt="The Schatveld marsh">
+    <div class="imgcap">The marsh you'll explore — Deich (dyke), Wurt with farmhouse, Gräben (ditches), crop fields &amp; roads.</div>
+  </div>
+
+  <div class="card">
+    <span class="pill on">Singleplayer · offline · no server</span>
+    &nbsp;<span class="muted">This is the quickest way to play. Everything runs from the datapack — no Python, no server.</span>
+  </div>
+
+  <h2>▶ Quick start (singleplayer)</h2>
+  <div class="card">
+    <ol class="steps">
+      <li>Open the <b>Modrinth App</b> → profile <b>chemlab</b> → <b>Play</b>.</li>
+      <li><b>Singleplayer</b> → open the world <b>chemfield</b> → <b>Play</b>.</li>
+      <li>On join you're <b>automatically given a Metal Detector + Shovel</b>, and the marsh
+          <b>builds itself around you</b> (you'll be placed on it). No commands needed.</li>
+      <li><b>Hold the Metal Detector</b> and <b>right-click the ground</b> → a number <b>0–100</b> appears (metal reading).</li>
+      <li><b>Dig</b> the ground (dirt / grass / clay / farmland …) → you find something. <b>Below 10 = always rusty iron</b>; higher = coins, amber, a fibula, a Wurt artefact…</li>
+    </ol>
+  </div>
+
+  <div class="tip"><b>Language:</b> switch anytime in <b>Options → Language</b> — English (default), Deutsch, Français, Русский, Español, Português (BR), 简体中文, 日本語, Nederlands. The whole game follows.</div>
+
+  <h2>🧰 Your tools</h2>
+  <div class="hero" style="background:#151d27">
+    <img src="../data/schatveld_models_preview.png" alt="Item icons">
+    <div class="imgcap">Metal Detector &amp; Shovel are 2D item icons · the Tractor &amp; Police Car are 3D models.</div>
+  </div>
+
+  <h2>🎭 The three roles</h2>
+  <div class="card">
+    <div class="role"><span class="dot" style="background:var(--blue)"></span><div>
+      <b>Archaeologist</b> — the default detect-and-dig loop. Right-click ground to read 0–100, dig for finds.
+      Significant finds fall under the <i>Schatzregal</i> (state property → finder's fee). Digging without a permit is <i>Raubgrabung</i>.
+    </div></div>
+    <div class="role"><span class="dot" style="background:var(--green)"></span><div>
+      <b>Farmer</b> — gets a <b>Tractor</b>. Right-click the ground with it to drive; <b>sneak to park</b>, right-click it to drive again. The tractor can drive <b>anywhere</b>, fields included.
+    </div></div>
+    <div class="role"><span class="dot" style="background:#c9b6e0"></span><div>
+      <b>Police</b> — gets a <b>Police Car</b>. Same driving, but it must <b>stay on the roads</b> (gravel) — drive onto a field and you're ejected. Interactions only work within <b>5 blocks</b>.
+    </div></div>
+    <p class="muted" style="margin:10px 0 0">To switch role (you're op/creative, so commands work): run <code>/function schatveld:menu</code> and click a role.</p>
+  </div>
+
+  <h2>⚠️ If something looks wrong</h2>
+  <div class="warn">
+    <b>No detector, or no marsh?</b> That happens only if you joined this world before the latest fix.
+    Fix it once (you have cheats/op): press <kbd>T</kbd> and run
+    <code>/function schatveld:build_marsh</code> (builds the marsh where you stand) and
+    <code>/function schatveld:shop/give_detector</code> (gives the detector).
+  </div>
+  <div class="warn">
+    <b>It crashed before?</b> That was <b>Physics Mod</b> conflicting with Entity Model Features on entity death —
+    it's now <b>disabled</b> in chemlab, so it won't crash again.
+  </div>
+
+  <h2>🖥️ The full version (optional)</h2>
+  <div class="card">
+    <span class="pill srv">Server + brain</span>
+    <p>Standalone gives you detecting, digging, finds and the vehicles. The <b>economy</b> (€ payouts, Schatzregal
+    finder-fee, the Landesmuseum collection, reputation ranks, farming &amp; policing scoring) runs in a small
+    Python "brain". To use it: in a terminal run <code>bash pybrain/play.sh</code>, then in chemlab connect via
+    <b>Multiplayer → Direct Connection → <code>localhost</code></b>. Stop it with <code>bash pybrain/stop.sh</code>.</p>
+  </div>
+
+  <table>
+    <tr><th>Feature</th><th>Singleplayer (offline)</th><th>Server (brain)</th></tr>
+    <tr><td>Detector + dig + finds</td><td>✅</td><td>✅</td></tr>
+    <tr><td>Marsh landscape</td><td>✅ builds around you</td><td>✅</td></tr>
+    <tr><td>3D models · 9 languages</td><td>✅</td><td>✅</td></tr>
+    <tr><td>Vehicles (tractor / police)</td><td>✅</td><td>✅</td></tr>
+    <tr><td>€ economy · museum · ranks · fines</td><td>—</td><td>✅</td></tr>
+  </table>
+
+  <footer>Schatveld · molgang/schatveld · Weddewarden (Land Wursten) · have fun digging the marsh 🪏</footer>
+</div>
+</body>
+</html>

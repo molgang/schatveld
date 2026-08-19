@@ -153,10 +153,10 @@ def main():
     out = os.path.join(BUILD, "schatveld_resources.zip")
     mcmeta = {
         "pack": {
-            # 1.21.10 resource-pack-formaat = 69; 1.21.9+ vereist min_format/max_format
+            # 1.21.10 resource-pack-formaat = 69. Resource packs gebruiken GEEN
+            # min_format/max_format (dat is voor datapacks); >=65 accepteert pack_format
+            # alleen. min_format 34 werd door de game als 'format 34' gelezen → afgekeurd.
             "pack_format": 69,
-            "min_format": 34,
-            "max_format": 69,
             "description": "Schatveld — vondsten & metaaldetector (Weddewarden)",
         }
     }
