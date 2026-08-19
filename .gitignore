@@ -5,3 +5,5 @@ resourcepack/build/
 **/.ipynb_checkpoints/
 pybrain/state.json
 .DS_Store
+dist/Schatveld_Setup.zip
+asset/2d/*.zip
